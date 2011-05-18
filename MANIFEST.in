@@ -1,1 +1,1 @@
-recursive-include spaciblo *.txt *.html
+recursive-include spaciblo *.txt *.html *.frag
