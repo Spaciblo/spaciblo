@@ -1,13 +1,13 @@
 {% extends "front/base.html" %}
 
-{% block style%}
+{% block sub-style%}
 canvas { border: solid 1px #EEE; }
 {% endblock %}
 
 {% block sub-head %}
-<script type="text/javascript" src="{{MEDIA_URL}}glge/glge_math.js"></script> 
-<script type="text/javascript" src="{{MEDIA_URL}}glge/glge.js"></script> 
-<script type="text/javascript" src="{{MEDIA_URL}}glge/glge_input.js"></script> 
+<script type="text/javascript" src="{{STATIC_URL}}glge/glge_math.js"></script> 
+<script type="text/javascript" src="{{STATIC_URL}}glge/glge.js"></script> 
+<script type="text/javascript" src="{{STATIC_URL}}glge/glge_input.js"></script> 
 {% endblock %}
 
 {% block script %}

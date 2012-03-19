@@ -2,7 +2,7 @@
 
 {%block sub-title%}{{ space.name }} | {% endblock %}
 
-{% block style%}
+{% block sub-style%}
 .space-viewer {
 	width: 800px;
 }
@@ -29,9 +29,9 @@
 {% endblock %}
 
 {% block sub-head %}
-<script type="text/javascript" src="{{MEDIA_URL}}glge/glge_math.js"></script> 
-<script type="text/javascript" src="{{MEDIA_URL}}glge/glge.js"></script> 
-<script type="text/javascript" src="{{MEDIA_URL}}glge/glge_input.js"></script> 
+<script type="text/javascript" src="{{STATIC_URL}}glge/glge_math.js"></script> 
+<script type="text/javascript" src="{{STATIC_URL}}glge/glge.js"></script> 
+<script type="text/javascript" src="{{STATIC_URL}}glge/glge_input.js"></script> 
 <script src="{% url spaciblo.sim.views.spaciblo_js %}"></script>
 
 <script>

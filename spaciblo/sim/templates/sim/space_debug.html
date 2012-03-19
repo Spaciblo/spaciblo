@@ -1,11 +1,11 @@
 {% extends "front/base.html" %}
 
-{% block style%}
+{% block sub-style%}
 .thing-div { display: block; }
 {% endblock %}
 
 {% block sub-head %}
-<script src="{{MEDIA_URL}}spaciblo/jquery-1.3.js"></script>
+<script src="{{STATIC_URL}}spaciblo/jquery-1.3.js"></script>
 <script src="{% url spaciblo.sim.views.spaciblo_js %}"></script>
 {% endblock %}
 

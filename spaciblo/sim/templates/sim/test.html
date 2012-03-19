@@ -2,18 +2,18 @@
 
 {%block sub-title%}Tests | {% endblock %}
 
-{% block style%}
+{% block sub-style%}
 #test-canvas { border: solid 1px #eee; margin-top: 20px; }
 {% endblock %}
 
 {% block sub-head %}
-<script type="text/javascript" src="{{MEDIA_URL}}glge/glge_math.js"></script> 
-<script type="text/javascript" src="{{MEDIA_URL}}glge/glge.js"></script> 
-<script type="text/javascript" src="{{MEDIA_URL}}glge/glge_input.js"></script> 
+<script type="text/javascript" src="{{STATIC_URL}}glge/glge_math.js"></script> 
+<script type="text/javascript" src="{{STATIC_URL}}glge/glge.js"></script> 
+<script type="text/javascript" src="{{STATIC_URL}}glge/glge_input.js"></script> 
 <script src="{% url spaciblo.sim.views.spaciblo_js %}"></script>
 
-<link rel="stylesheet" href="{{ MEDIA_URL }}qunit/qunit.css" type="text/css" media="screen" />
-<script type="text/javascript" src="{{ MEDIA_URL }}qunit/qunit.js"></script>
+<link rel="stylesheet" href="{{ STATIC_URL }}qunit/qunit.css" type="text/css" media="screen" />
+<script type="text/javascript" src="{{ STATIC_URL }}qunit/qunit.js"></script>
 {% endblock %}
 
 {% block script %}
