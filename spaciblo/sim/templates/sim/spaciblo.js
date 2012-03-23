@@ -10,8 +10,6 @@ if(!window.console){
 
 String.prototype.endsWith = function(str){ return (this.match(str+"$")==str) }
 
-{% include "sim/events.js" %}
-
 {% include "sim/models.js" %}
 
 {% include "sim/input.js" %}
@@ -41,43 +39,6 @@ Spaciblo.stringify = function(hydrateObj){
 Spaciblo.defaultRotation = [1.56, 0, 0]; //1.56
 Spaciblo.defaultPosition = [0.01, 0.01, 0.01];
 
-Spaciblo.WebSocketClient = function(_ws_port, _ws_host, _message_handler_function){
-	var self = this;
-	self.socket = null;
-	self.ws_port = _ws_port;
-	self.ws_host = _ws_host;
-	self.message_handler_function = _message_handler_function;
-	
-	self.onopen = function() { }
-	self.onclose = function() { }
-	self.onmessage = function(message) { 
-		self.message_handler_function(message.data);
-	}
-	
-	self.open = function(){
-		try {
-			self.socket = new WebSocket("ws://" + self.ws_host + ":" + self.ws_port + "/");
-			self.socket.onopen = self.onopen;
-			self.socket.onclose = self.onclose;
-			self.socket.onmessage = self.onmessage;
-		} catch (error) {
-			console.log('Err ' + error)
-		}
-	}
-	
-	self.send = function(message){
-		try {
-			self.socket.send(message)
-		} catch (error) {
-			console.log('Err ' + error)
-		}
-	}
-	
-	self.close = function(){
-		self.socket.close()
-	}
-}
-
 Spaciblo.SpaceClient = function(space_id, canvas) {
 	var self = this;
 	self.space_id = space_id;
@@ -98,8 +59,7 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 	self.suggest_render_handler = function(){}
 	self.close_handler = function(){}
 
-	self.handle_message = function(message) {
-		spaciblo_event = SpacibloEvents.rehydrateEvent(JSON.parse(message));
+	self.handle_event = function(spaciblo_event) {
 		switch(spaciblo_event.type) {
 			case 'Heartbeat':
 				break;
@@ -152,22 +112,38 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 		}
 	}
 
-	self.ws_client = new Spaciblo.WebSocketClient(9876, document.location.hostname, self.handle_message);
+	self.wind_client = new Wind.Client();
 	self.open = function() {
-		self.ws_client.onopen = self.__open;
-		self.ws_client.onclose = self.__close;
-		self.ws_client.open();
+		self.wind_client.open_handler = self.__open;
+		self.wind_client.close_handler = self.__close;
+		self.wind_client.app_event_handler = self.handle_event;
+
+		self.wind_client.authentication_handler = function(success){
+			if(success){
+				console.log('Space client authenticated');
+			} else {
+				console.log('Space client did not authenticate');
+			}
+		};
+
+		self.wind_client.open();
 	}
 
+	self.__open = function(){
+		console.log('Space client opened');
+		self.open_handler();
+	}
+	self.__close = function(){
+		console.log('Space client closed');
+		self.close_handler();
+	}
+	
 	self.sendEvent = function(event){
-		self.ws_client.send(event.toJSON());
+		self.wind_client.sendEvent(event);
 	}
 
 	self.authenticate = function() {
-		var cookie = Spaciblo.getSessionCookie();
-		if(cookie == null || cookie == '') return false;
-		self.sendEvent(new SpacibloEvents.AuthenticationRequest(cookie));
-		return true;
+		self.wind_client.authenticate();
 	}
 	
 	self.joinSpace = function() {
@@ -184,18 +160,8 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 	}
 	
 	self.close = function() {
-		self.ws_client.close();
+		self.wind_client.close();
 	}
-	
-	self.__open = function(){
-		//console.log('Space client opened');
-		self.open_handler();
-	}
-	self.__close = function(){
-		console.log('Space client closed');
-		self.close_handler();
-	}
-	
 }
 
 Spaciblo.escapeHTML = function(xml){

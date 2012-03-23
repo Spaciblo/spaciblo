@@ -9,10 +9,13 @@ from django.conf import settings
 from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, load_backend
 from django.contrib.auth.models import AnonymousUser
 
+from blank_slate.wind.events import parse_event_json
+from blank_slate.wind.server import Server as WindServer
+from blank_slate.wind.handler import to_json
+
+import spaciblo.sim
 import spaciblo.sim.sim_pool as sim_pool
 import spaciblo.sim.events as events
-from spaciblo.sim.websocket import WebSocketServer, receive_web_socket_message
-from spaciblo.sim.handler import to_json
 from spaciblo.sim.models import Space, SimulatorPoolRegistration
 
 class WebSocketConnection:
@@ -51,7 +54,7 @@ class WebSocketConnection:
 			if incoming_data == None: 
 				break
 			#print 'Incoming:', incoming_data
-			event = events.parse_event_json(incoming_data)
+			event = parse_event_json(incoming_data)
 			if not event:
 				print "Could not read an event from the data: %s" % data
 				continue
@@ -152,17 +155,22 @@ class WebSocketConnection:
 		return "Connection: %s user: %s space: %s" % (self.client_address, self.user, self.space_id)	
 
 class SimulationServer:
-	"""The handler of WebSockets based communications and creator of the sim pool."""
+	"""
+	Runs a Wind server and a sim pool.
+	TODO: Allow the wind server to be separate.
+	TODO: Allow multiple server pools.
+	"""
 	def __init__(self):
-		self.ws_server = WebSocketServer(self.ws_callback, port=settings.WEB_SOCKETS_PORT)
+		self.wind_server = WindServer()
 		self.sim_pool = sim_pool.SimulatorPool(self)
 		self.ws_connections = []
 		self.registration = None
+		spaciblo.sim.DEFAULT_SIM_SERVER = self
 		
 	def start(self):
+		self.wind_server.start()
 		self.sim_pool.start_all_spaces()
-		self.ws_server.start()
-		self.registration, created = SimulatorPoolRegistration.objects.get_or_create(ip=self.ws_server.sock.getsockname()[0], port=self.ws_server.port)
+		self.registration, created = SimulatorPoolRegistration.objects.get_or_create(ip=self.wind_server.ws_server.socket.getsockname()[0], port=self.wind_server.ws_server.port)
 
 	def stop(self):
 		if self.registration:
@@ -172,32 +180,7 @@ class SimulationServer:
 				traceback.print_exc()
 
 		self.sim_pool.stop_all_spaces()
-		self.ws_server.stop()
+		self.wind_server.stop()
 		
-		for con in self.ws_connections:
-			try:
-				con.client_socket.shutdown(1)
-			except:
-				traceback.print_exc()
-
-	def send_space_event(self, space_id, event):
-		for connection in self.get_client_connections(space_id):
-			connection.outgoing_events.put(event)
-
-	def get_client_connections(self, space_id):
-		#TODO keep a hashmap of space_id:connection[] for faster access
-		cons = []
-		for connection in self.ws_connections:
-			if connection.space_id == space_id: cons.append(connection)
-		return cons
-
-	def ws_callback(self, client_socket):
-		ws_connection = WebSocketConnection(client_socket, self)
-		self.ws_connections.append(ws_connection)
-		try:
-			ws_connection.handle_incoming()
-		except (IOError):
-			ws_connection.finish()
-
 
 # Copyright 2010 Trevor F. Smith (http://trevor.smith.name/) Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.

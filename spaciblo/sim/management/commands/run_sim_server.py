@@ -1,11 +1,8 @@
 import os
+import sys
 import time
-import csv
-import ConfigParser
 
-from django.template.defaultfilters import slugify
 from django.core.management.base import NoArgsCommand, CommandError
-from django.core.files import File
 
 class Command(NoArgsCommand):
 	"""Runs the spaciblo simulation server."""
@@ -14,8 +11,7 @@ class Command(NoArgsCommand):
 	requires_model_validation = True
 
 	def handle_noargs(self, **options):
-		from spaciblo.sim.management import *
-		from spaciblo.sim.sim_server import *
+		from spaciblo.sim.sim_server import SimulationServer
 		sim_server = SimulationServer()
 		sim_server.start()
 		try:

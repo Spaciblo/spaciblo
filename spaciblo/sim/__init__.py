@@ -12,3 +12,4 @@ class UserHandler(BaseHandler):
 	fields = ('username', 'first_name', 'last_name')
 	allowed_methods = ('GET',)
 
+DEFAULT_SIM_SERVER = None

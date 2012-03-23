@@ -6,8 +6,7 @@ from django.contrib.auth.models import User
 
 from piston.resource import Resource
 
-from models import *
-from handler import *
+from models import TemplateHandler, AssetHandler, SpaceHandler
 
 urlpatterns = patterns('',
 	(r'^template/$', Resource(handler=TemplateHandler)),

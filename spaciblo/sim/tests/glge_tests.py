@@ -10,8 +10,9 @@ from django.core import mail
 from django.test.client import Client
 from django.contrib.sessions.models import Session
 
+from blank_slate.wind.handler import to_json, from_json
+
 from spaciblo.sim.glge import Scene
-from spaciblo.sim.handler import to_json, from_json
 from spaciblo.sim.loaders.primitives import create_plane, create_box
 
 class SceneTest(TransactionTestCase): 

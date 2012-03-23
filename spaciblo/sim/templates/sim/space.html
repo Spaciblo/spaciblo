@@ -29,9 +29,10 @@
 {% endblock %}
 
 {% block sub-head %}
-<script type="text/javascript" src="{{STATIC_URL}}glge/glge_math.js"></script> 
-<script type="text/javascript" src="{{STATIC_URL}}glge/glge.js"></script> 
-<script type="text/javascript" src="{{STATIC_URL}}glge/glge_input.js"></script> 
+<script src="{% url blank_slate.wind.views.windjs %}"></script>
+<script src="{{STATIC_URL}}glge/glge_math.js"></script> 
+<script src="{{STATIC_URL}}glge/glge.js"></script> 
+<script src="{{STATIC_URL}}glge/glge_input.js"></script> 
 <script src="{% url spaciblo.sim.views.spaciblo_js %}"></script>
 
 <script>

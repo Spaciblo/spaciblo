@@ -3,13 +3,13 @@ import pprint
 import simplejson
 import datetime
 
+from django.conf import settings
 from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from django.contrib.auth.models import User
 from django.core import mail
 from django.contrib.sessions.models import Session
 
-import spaciblo.settings as settings
 from spaciblo.sim.loaders.obj import ObjLoader, MtlLibLoader
 from spaciblo.sim.glge import Object, Group, Mesh
 

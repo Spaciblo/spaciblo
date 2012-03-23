@@ -1,12 +1,16 @@
 """Simulations and a simple pool."""
+import Queue
 import datetime
 import threading
-import Queue
-from time import sleep
 import simplejson
+from time import sleep
 
-from spaciblo.sim.models import *
-from spaciblo.sim.events import *
+from django.conf import settings
+
+from blank_slate.wind.client import Client
+from blank_slate.wind.events import Heartbeat, CreateChannelRequest, SubscribeRequest, SubscribeResponse
+
+from spaciblo.sim.models import Space
 from spaciblo.sim.glge import Scene, Object, Group
 
 DEFAULT_SIM_POOL = None
@@ -30,16 +34,23 @@ class Simulator:
 		
 		self.state = Simulator.ready
 
-	def __unicode__(self):
-		return "Simulator for %s" % self.space
+		self.client = Client(settings.WEB_SOCKETS_SECRET, '127.0.0.1', settings.WEB_SOCKETS_PORT, '127.0.0.1:8000', self.handle_event)
+		self.client.authenticate()
+
+	@property
+	def channel_id(self): return 'space_%s' % self.space.id
+
+	def handle_event(self, event): self.event_queue.put(event)
+
+	def __unicode__(self): return "Simulator for %s" % self.space
 
 	def stop(self):
 		if self.state != Simulator.running:
 			print 'Tried to stop a simulator which is not running: ' % self.state
 			return
+		self.client.close()
 		self.state = Simulator.terminating
 		self.should_run = False
-		self.state = Simulator.stopped
 
 	def run(self):
 		"""The simulation loop"""
@@ -52,10 +63,12 @@ class Simulator:
 			try:
 				event = self.event_queue.get(block=True, timeout=5)
 			except Queue.Empty:
-				self.pool.sim_server.send_space_event(self.space.id, Heartbeat())
+				self.client.send_event(Heartbeat())
 				continue
 			
-			if not self.should_run: return
+			if not self.should_run:
+				self.state = Simulator.stopped
+				return
 			
 			if event.event_name() == 'AddUserRequest':
 				user_node = self.scene.get_user(event.username)
@@ -65,7 +78,7 @@ class Simulator:
 					user_node.set_loc(event.position)
 					user_node.set_quat(event.orientation)
 					self.scene.children.append(user_node)
-					self.pool.sim_server.send_space_event(self.space.id, NodeAdded(self.space.id, self.scene.uid, to_json(user_node)))
+					self.client.send_event(NodeAdded(self.space.id, self.scene.uid, to_json(user_node)))
 				else:
 					print "Already have a user with id", event.username
 
@@ -78,7 +91,7 @@ class Simulator:
 
 			elif event.event_name() == 'UserMessage':
 				if event.connection.user != None and event.username == event.connection.user.username:
-					self.pool.sim_server.send_space_event(self.space.id, UserMessage(self.space.id, event.username, event.message))
+					self.client.send_event(UserMessage(self.space.id, event.username, event.message))
 
 			elif event.event_name() == 'UserMoveRequest':
 				if event.connection.user != None and event.username == event.connection.user.username:
@@ -89,15 +102,26 @@ class Simulator:
 						user_node.set_loc(event.position)
 						user_node.set_quat(event.orientation)
 						response = PlaceableMoved(self.space.id, user_node.uid, user_node.loc, user_node.quat)
-						self.pool.sim_server.send_space_event(self.space.id, response)
+						self.client.send_event(response)
 
 			elif event.event_name() == 'TemplateUpdated':
 				if event.connection.user != None and event.connection.user.is_staff:
-					self.pool.sim_server.send_space_event(self.space.id, TemplateUpdated(self.space.id, event.template_id, event.url, event.key))
+					self.client.send_event(TemplateUpdated(self.space.id, event.template_id, event.url, event.key))
+
+			elif event.event_name() == 'AuthenticationResponse':
+				self.client.send_event(CreateChannelRequest(self.channel_id))
+
+			elif event.event_name() == 'ChannelCreated' or event.event_name() == 'ChannelExists':
+				self.client.send_event(SubscribeRequest(self.channel_id))
+
+			elif event.event_name() == 'SubscribeResponse':
+				print 'Sim is subscribed to %s: %s' % (event.channel_id, event.joined) 
+				pass
 
 			else:
 				print "Unknown event: %s" % event.event_name()
 
+		self.state = Simulator.stopped
 		print "Exiting %s %s"  % (self, datetime.datetime.now())
 
 class SimulationThread(threading.Thread):

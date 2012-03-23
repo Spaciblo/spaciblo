@@ -2,8 +2,8 @@
 
 import simplejson
 
+from blank_slate.wind.handler import to_json
 from spaciblo.sim.glge import Group, Object, Material, Mesh, Texture
-from spaciblo.sim.handler import to_json
 
 def flatten_faces(faces):
 	"""Returns a flat array of triples from faces, making two triangles of any quads"""
