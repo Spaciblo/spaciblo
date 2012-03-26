@@ -9,7 +9,9 @@ from django.conf import settings
 
 from blank_slate.wind.client import Client
 from blank_slate.wind.events import Heartbeat, CreateChannelRequest, SubscribeRequest, SubscribeResponse
+from blank_slate.wind.handler import to_json, from_json
 
+from spaciblo.sim.events import SpaceChannel, NodeAdded, NodeRemoved, PlaceableMoved
 from spaciblo.sim.models import Space
 from spaciblo.sim.glge import Scene, Object, Group
 
@@ -38,7 +40,7 @@ class Simulator:
 		self.client.authenticate()
 
 	@property
-	def channel_id(self): return 'space_%s' % self.space.id
+	def channel_id(self): return SpaceChannel.generate_channel_id(self.space.id)
 
 	def handle_event(self, event): self.event_queue.put(event)
 
@@ -70,7 +72,7 @@ class Simulator:
 				self.state = Simulator.stopped
 				return
 			
-			if event.event_name() == 'AddUserRequest':
+			if event.event_name() == 'UserAdded':
 				user_node = self.scene.get_user(event.username)
 				if user_node is None:
 					user_node = Group()
@@ -78,20 +80,19 @@ class Simulator:
 					user_node.set_loc(event.position)
 					user_node.set_quat(event.orientation)
 					self.scene.children.append(user_node)
-					self.client.send_event(NodeAdded(self.space.id, self.scene.uid, to_json(user_node)))
+					self.client.send_event(NodeAdded(self.scene.uid, to_json(user_node)))
 				else:
 					print "Already have a user with id", event.username
+
+			elif event.event_name() == 'NodeAdded':
+				pass
 
 			elif event.event_name() == 'UserExited':
 				#print 'User exited', event.username
 				user_node = self.scene.get_user(event.username)
 				if user_node:
 					self.scene.remove_node(user_node.uid)
-					self.pool.sim_server.send_space_event(self.space.id, NodeRemoved(self.space.id, user_node.uid))
-
-			elif event.event_name() == 'UserMessage':
-				if event.connection.user != None and event.username == event.connection.user.username:
-					self.client.send_event(UserMessage(self.space.id, event.username, event.message))
+					self.client.send_event(NodeRemoved(user_node.uid))
 
 			elif event.event_name() == 'UserMoveRequest':
 				if event.connection.user != None and event.username == event.connection.user.username:
@@ -101,28 +102,25 @@ class Simulator:
 					else:
 						user_node.set_loc(event.position)
 						user_node.set_quat(event.orientation)
-						response = PlaceableMoved(self.space.id, user_node.uid, user_node.loc, user_node.quat)
+						response = PlaceableMoved(user_node.uid, user_node.loc, user_node.quat)
 						self.client.send_event(response)
 
 			elif event.event_name() == 'TemplateUpdated':
-				if event.connection.user != None and event.connection.user.is_staff:
-					self.client.send_event(TemplateUpdated(self.space.id, event.template_id, event.url, event.key))
+				pass
 
 			elif event.event_name() == 'AuthenticationResponse':
-				self.client.send_event(CreateChannelRequest(self.channel_id))
+				self.client.send_event(CreateChannelRequest(self.channel_id, class_name='spaciblo.sim.events.SpaceChannel', options={'space_id': self.space.id}))
 
 			elif event.event_name() == 'ChannelCreated' or event.event_name() == 'ChannelExists':
 				self.client.send_event(SubscribeRequest(self.channel_id))
 
 			elif event.event_name() == 'SubscribeResponse':
-				print 'Sim is subscribed to %s: %s' % (event.channel_id, event.joined) 
 				pass
 
 			else:
-				print "Unknown event: %s" % event.event_name()
+				print "Unknown event in simulator: %s" % event.event_name()
 
 		self.state = Simulator.stopped
-		print "Exiting %s %s"  % (self, datetime.datetime.now())
 
 class SimulationThread(threading.Thread):
 	def __init__ (self, pool, space):

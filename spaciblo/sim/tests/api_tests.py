@@ -24,16 +24,16 @@ class APITest(TestCase):
 	def test_web_api(self):
 		spaces = Space.objects.all()
 		self.assertTrue(len(spaces) > 0)
-		response = self.client.get(reverse('sim.api_views.scene_document', kwargs={ 'id':spaces[0].id }))
+		response = self.client.get(reverse('spaciblo.sim.api_views.scene_document', kwargs={ 'id':spaces[0].id }))
 		self.assertEqual(response.status_code, 200)
 		parsed_scene = json.loads(response.content)
 		templates = Template.objects.all()
 		self.assertTrue(len(templates) > 0)
 		self.assertTrue(len(templates[0].assets.all()) > 0)
 		asset = templates[0].assets.all()[0]
-		response = self.client.get(reverse('sim.api_views.template_asset', kwargs={'template_id':templates[0].id, 'asset_key':templates[0].get_key(asset)}))
+		response = self.client.get(reverse('spaciblo.sim.api_views.template_asset', kwargs={'template_id':templates[0].id, 'asset_key':templates[0].get_key(asset)}))
 		self.assertEqual(response.status_code, 302) # the template asset view redirects to the static file url
-		response = self.client.get(reverse('sim.api_views.template_asset', kwargs={'template_id':templates[0].id, 'asset_key':templates[0].get_key(asset)}), follow=True)
+		response = self.client.get(reverse('spaciblo.sim.api_views.template_asset', kwargs={'template_id':templates[0].id, 'asset_key':templates[0].get_key(asset)}), follow=True)
 		self.assertEqual(response.status_code, 200)
 		response = self.client.get('/api/sim/space/%s' % spaces[0].id, follow=True)
 		self.assertEqual(response.status_code, 200)

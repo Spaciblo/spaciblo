@@ -278,8 +278,8 @@ class TemplateHandler(BaseHandler):
 	def assets(cls, template): return [{'asset': ta.asset, 'id':ta.id, 'key': ta.key} for ta in template.templateassets.all()]
 
 class SimulatorPoolRegistrationManager(models.Manager):
-	def broadcast_event(self, session_key, event):
-		for reg in self.all(): reg.send_event(session_key, event)
+	def broadcast_event(self, session_key, space_id, event):
+		for reg in self.all(): reg.send_event(session_key, space_id, event)
 			
 
 class SimulatorPoolRegistration(models.Model):
@@ -289,12 +289,15 @@ class SimulatorPoolRegistration(models.Model):
 	
 	objects = SimulatorPoolRegistrationManager()
 
-	def send_event(self, session_key, event):
+	def send_event(self, session_key, space_id, event):
 		event_handler = EventHandler()
 		sim_client = SimClient(session_key, self.ip, self.port, '%s:80' % self.ip, event_handler.handle_event)
 		sim_client.authenticate()
 		auth_event = event_handler.events.get(True, 10)
-		if not auth_event.authenticated: raise Exception('Could not authenticate against the simulator pool')
+		if not auth_event.authenticated: raise Exception('SimulatorPoolRegistration could not authenticate against the simulator pool')
+		sim_client.join_space(space_id)
+		join_event = event_handler.events.get(True, 10)
+		if not join_event.joined: raise Exception('SimulatorPoolRegistration could not join the space channel: %s' % space_id)
 		sim_client.send_event(event)
 		sim_client.close()
 	

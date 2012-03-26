@@ -10,7 +10,7 @@ import django.contrib.sessions.backends.db as session_engine
 from django.contrib.auth import BACKEND_SESSION_KEY, SESSION_KEY, authenticate
 
 from blank_slate.wind.client import Client
-from blank_slate.wind.events import Heartbeat, AuthenticationResponse, parse_event_json
+from blank_slate.wind.events import Heartbeat, AuthenticationResponse, SubscribeResponse, parse_event_json
 
 import spaciblo.sim.events as events
 from spaciblo.sim.glge import Scene, Group, Object
@@ -21,16 +21,29 @@ class SimClient:
 		self.event_handler = event_handler
 		self.username = None
 		self.space_id = None
+		self.is_member = None
+		self.is_editor = None
+		self.is_admin = None
 		self.scene = None
 
 	def handle_event(self, event):
 		if isinstance(event, AuthenticationResponse):
 			if event.authenticated:
 				self.username = event.username
-		elif isinstance(event, events.JoinSpaceResponse):
+		elif isinstance(event, SubscribeResponse):
 			if event.joined:
-				self.space_id = event.space_id
+				self.space_id = events.SpaceChannel.parse_channel_id(event.channel_id)
+		elif isinstance(event, events.AddUserResponse):
+			if event.joined:
+				self.is_member = event.is_member
+				self.is_editor = event.is_editor
+				self.is_admin = event.is_admin
 				self.scene = Scene().populate(simplejson.loads(event.scene_doc))
+		elif isinstance(event, events.UserAdded):
+			pass
+		elif isinstance(event, events.UserExited):
+			user_node = self.scene.get_user(event.username)
+			if user_node: self.scene.remove_node(user_node)
 		elif isinstance(event, events.NodeAdded):
 			json = simplejson.loads(event.json_data)
 			if 'children' in json:
@@ -39,9 +52,6 @@ class SimClient:
 				node = Object().populate(json)
 			parent = self.scene.get_node(event.parent_id)
 			parent.children.append(node)
-		elif isinstance(event, events.UserExited):
-			user_node = self.scene.get_user(event.username)
-			if user_node: self.scene.remove_node(user_node)
 		elif isinstance(event, events.PlaceableMoved):
 			node = self.scene.get_node(event.uid)
 			if node:
@@ -58,11 +68,11 @@ class SimClient:
 
 	def authenticate(self): self.ws_client.authenticate()
 
-	def join_space(self, space_id): self.ws_client.send_event(events.JoinSpaceRequest(space_id))
+	def join_space(self, space_id): self.ws_client.subscribe(events.SpaceChannel.generate_channel_id(space_id))
 
-	def add_user(self): self.ws_client.send_event(events.AddUserRequest(self.space_id, self.username))
+	def add_user(self): self.ws_client.send_event(events.AddUserRequest())
 	
-	def notify_template_updated(self, template_id, url, key=None): self.ws_client.send_event(events.TemplateUpdated(self.space_id, template_id, url, key))
+	def notify_template_updated(self, template_id, url, key=None): self.ws_client.send_event(events.TemplateUpdated(template_id, url, key))
 
 	def request_pool_info(self): self.ws_client.send_event(events.PoolInfoRequest())
 

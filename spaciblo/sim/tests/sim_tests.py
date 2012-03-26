@@ -58,11 +58,19 @@ class SimTest(TransactionTestCase):
 		space = Space.objects.all()[0]
 		sim_client.join_space(space.id)
 		event = event_handler.events.get(True, 10)
-		self.failUnlessEqual(space.id, event.space_id)
 		self.failUnless(event.joined)
+		self.failUnlessEqual(space.id, sim_client.space_id)
+
+		sim_client.add_user()
+		event = event_handler.events.get(True, 10)
+		self.failUnless(sim_client.is_member)
+		self.failUnless(sim_client.is_editor)
+		self.failUnless(sim_client.is_admin)
 		self.failUnless(sim_client.scene)
 		self.failUnless(len(sim_client.scene.children) > 0)
-		
+		event = event_handler.events.get(True, 10)
+		self.failUnlessEqual(event.username, 'trevor')
+			
 		event_handler2 = EventHandler()
 		sim_client2 = SimClient(self.client2.session.session_key, '127.0.0.1', self.sim_server.wind_server.ws_server.port, '127.0.0.1:8000', event_handler=event_handler2.handle_event)
 		sim_client2.authenticate()
@@ -71,27 +79,34 @@ class SimTest(TransactionTestCase):
 		
 		sim_client2.join_space(space.id)
 		event = event_handler2.events.get(True, 10)
-		self.failUnless(event.joined == False) # client 2 is not a member yet
+		self.failUnless(event.joined == False, event.to_json()) # client 2 is not a member yet
 		user2 = User.objects.get(username='sarah')
 		space_member = SpaceMember.objects.create(space=space, member=user2)
 		sim_client2.join_space(space.id)
 		event = event_handler2.events.get(True, 10)
 		self.failUnless(event.joined == False)
+
 		space_member.is_admin = True
 		space_member.save()
 		sim_client2.join_space(space.id)
 		event = event_handler2.events.get(True, 10)
 		self.failUnless(event.joined)
 		
-		sim_client.add_user()
-		event = event_handler.events.get(True, 10)
-		self.failUnless(event.json_data)
+		sim_client2.add_user()
 		event = event_handler2.events.get(True, 10)
-		self.failUnless(event.json_data)
+		self.failUnless(event.joined)
+		self.failUnless(event.is_member)
+		event_handler2.events.get(True, 10) # ignore the UserAdded event
+		event = event_handler.events.get(True, 10)
+		self.failUnless(event.parent_id)
+		event = event_handler.events.get(True, 10)
+		self.failUnlessEqual(event.username, user2.username)
 		
+		event_handler.events.get(True, 10) # ignore the NodeAdded event
 		sim_client.notify_template_updated(3, '/url')
 		event = event_handler.events.get(True, 10)
 		self.failUnlessEqual(event.template_id, 3)
+		event_handler2.events.get(True, 10) # ignore the NodeAdded event
 		event = event_handler2.events.get(True, 10)
 		self.failUnlessEqual(event.template_id, 3)
 
@@ -104,7 +119,7 @@ class SimTest(TransactionTestCase):
 		self.failUnlessEqual(event.template_id, 2)
 		self.failUnlessEqual(event.key, 'moon')
 
-		SimulatorPoolRegistration.objects.broadcast_event(self.client.session.session_key, TemplateUpdated(space.id, 23, '/some/url/23', 'dink'))
+		SimulatorPoolRegistration.objects.broadcast_event(self.client.session.session_key, space.id, TemplateUpdated(23, '/some/url/23', 'dink'))
 		event = event_handler.events.get(True, 10)
 		self.failUnlessEqual(event.template_id, 23)
 		self.failUnlessEqual(event.key, 'dink')
