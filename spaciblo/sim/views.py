@@ -73,7 +73,7 @@ def space_debug(request, id):
 	return render_to_response('sim/space_debug.html', { 'space':space }, context_instance=RequestContext(request))
 
 def spaciblo_js(request):
-	return render_to_response('sim/spaciblo.js', {'events': events.SIM_EVENTS, 'models':HYDRATE_MODELS, 'scene_graph_classes': glge.SCENE_GRAPH_CLASSES }, context_instance=RequestContext(request), mimetype='application/javascript')
+	return render_to_response('sim/spaciblo.js', {'models':HYDRATE_MODELS, 'scene_graph_classes': glge.SCENE_GRAPH_CLASSES }, context_instance=RequestContext(request), mimetype='application/javascript')
 
 def foo(request):
 	return render_to_response('sim/scratch.html', { }, context_instance=RequestContext(request))

@@ -60,6 +60,7 @@ class AddUserRequest(Event):
 		if allow_join:
 			response_event.position = self.position
 			response_event.orientation = self.orientation
+			print 'Getting scene doc:', connection.channel.space.id, [sim.space.id for sim in spaciblo.sim.DEFAULT_SIM_SERVER.sim_pool.simulators]
 			response_event.scene_doc = to_json(spaciblo.sim.DEFAULT_SIM_SERVER.sim_pool.get_simulator(connection.channel.space.id).scene)
 		if space_member:
 			response_event.is_member = True

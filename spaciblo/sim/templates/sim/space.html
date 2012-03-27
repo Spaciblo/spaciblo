@@ -56,6 +56,7 @@ function initialize(){
 	space_client.close_handler = handle_client_close;
 	space_client.authentication_handler = handle_client_auth;
 	space_client.join_space_handler = handle_join_space;
+	space_client.add_user_handler = handle_add_user;
 	space_client.user_message_handler = user_message_handler;
 	space_client.suggest_render_handler = function() {};
 	space_client.open();
@@ -89,15 +90,18 @@ function handle_join_space(successful){
 		console.log("Could not join the space.");
 		return;
 	} else {
-	   console.log("Joined the space.");
+		console.log("Joined the space.");
+		space_client.addUser(Spaciblo.defaultPosition, Spaciblo.defaultOrientation);
 	}
+}
+
+function handle_add_user(){
+	console.log("Handling add user", space_client, space_client.sceneJson, space_client.username);
 	if(sv_canvas.initialize(space_client.sceneJson, space_client.username)){
 		space_client.scene = sv_canvas.scene;
 		setupInput();
 		$("#key-catcher").focus();
-
 		setInterval(tick, 25);
-		space_client.addUser(Spaciblo.defaultPosition, Spaciblo.defaultOrientation);
 	} else {
 		console.log("Could not initialize the renderer");
 	}

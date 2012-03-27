@@ -116,7 +116,7 @@ class Asset(HydrateModel):
 
 class AssetHandler(BaseHandler):
 	model = Asset
-	fields = ('id', 'type', 'file', 'prepped_file', 'file')
+	fields = ('id', 'type', 'file', 'prepped_file')
 	allowed_methods = ('GET',)
 
 	@classmethod

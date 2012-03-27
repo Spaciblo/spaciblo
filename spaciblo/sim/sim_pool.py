@@ -114,6 +114,9 @@ class Simulator:
 			elif event.event_name() == 'ChannelCreated' or event.event_name() == 'ChannelExists':
 				self.client.send_event(SubscribeRequest(self.channel_id))
 
+			elif event.event_name() == 'UserMessage':
+				pass
+
 			elif event.event_name() == 'SubscribeResponse':
 				pass
 

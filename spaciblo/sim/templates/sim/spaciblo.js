@@ -55,6 +55,7 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 	self.close_handler = function(){}
 	self.authentication_handler = function(successful) {}
 	self.join_space_handler = function(successful) {}
+	self.add_user_handler = function(successful) {}
 	self.user_message_handler = function(username, message) {}
 	self.suggest_render_handler = function(){}
 	self.close_handler = function(){}
@@ -76,15 +77,17 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 				self.finished_auth = true;
 				self.authentication_handler(self.username != null);
 				break;
-			case 'JoinSpaceResponse':
+			case 'AddUserResponse':
+				console.log('add user response', spaciblo_event);
 				if(spaciblo_event.joined == true){
 					self.sceneJson = JSON.parse(spaciblo_event.scene_doc);
-				}		
+				}
 				self.finished_join = true;
-				self.join_space_handler(spaciblo_event.joined);
+				self.add_user_handler()
 				break;
 			case 'NodeAdded':
 				var nodeJson = JSON.parse(spaciblo_event.json_data);
+				break;
 				if(self.scene.getNode(nodeJson.uid)){
 					console.log("Tried to add a duplicate node: " + nodeJson.uid);
 					break;
@@ -108,7 +111,7 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 				if(self.canvas) self.canvas.assetManager.updateTemplate(spaciblo_event.template_id, spaciblo_event.url, spaciblo_event.key);
 				break;
 			default:
-				console.log("Received an unknown event: ", message);
+				console.log("Received an unknown event: ", spaciblo_event);
 		}
 	}
 
@@ -121,9 +124,15 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 		self.wind_client.authentication_handler = function(success){
 			if(success){
 				console.log('Space client authenticated');
+				self.joinSpace();
 			} else {
 				console.log('Space client did not authenticate');
 			}
+		};
+
+		self.wind_client.subscription_handler = function(channel_id, joined, is_member, is_admin, is_editor){
+			console.log('Space client subscribed', joined);
+			self.join_space_handler(joined);
 		};
 
 		self.wind_client.open();
@@ -147,16 +156,16 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 	}
 	
 	self.joinSpace = function() {
-		self.sendEvent(new SpacibloEvents.JoinSpaceRequest(self.space_id));
+		self.sendEvent(new Wind.Events.SubscribeRequest('space_' + self.space_id));
 	}
 	
 	self.addUser = function(position, orientation) {
-		if(self.scene.getUserGroup(self.username) != null) return;
-		self.sendEvent(new SpacibloEvents.AddUserRequest(self.username, position, self.space_id, orientation));
+		//if(self.scene.getUserGroup(self.username) != null) return;
+		self.sendEvent(new Wind.Events.AddUserRequest(position, orientation));
 	}
 	
 	self.sendUserMessage = function(message){
-		self.sendEvent(new SpacibloEvents.UserMessage(self.username, self.space_id, message));
+		self.sendEvent(new Wind.Events.UserMessage(self.username, message));
 	}
 	
 	self.close = function() {
