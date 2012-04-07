@@ -50,5 +50,5 @@ class JSONLoader:
 		if matJson.has_key('active_texture'):
 			material.texture = Texture()
 			material.texture.name = matJson['active_texture']['name']
-			material.texture.key = matJson['active_texture']['image']
+			#material.texture.key = matJson['active_texture']['image']
 		return material

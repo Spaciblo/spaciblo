@@ -102,17 +102,14 @@ def populate_class_array(target, data, cls, key_name):
 
 class SceneBase(object):
 	"""The base class which all scene elements extend."""
-	def __init__(self, uid=None):
-		if not hasattr(self, 'uid'):
-			self.uid = uid or SceneBase.createUUID()
-		self.name = None #used mostly for debugging
+	def __init__(self, uid=None, name=None):
+		self.uid = uid or SceneBase.createUUID()
+		self.name = name #used mostly for debugging
 		
 	def flatten(self):
 		"""returns a flattened array of the entire DAG"""
-		if 'children' in self: return [self]
 		results = [self]
-		for child in self.children:
-			results.append(child.flatten())
+		for child in self.children: results.extend(child.flatten())
 		return results
 
 	def populate(self, data):

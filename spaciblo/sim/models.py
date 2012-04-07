@@ -188,20 +188,21 @@ class Template(HydrateModel):
 		json_assets = []
 		app_asset = None
 		for template_asset in TemplateAsset.objects.filter(template=self):
-			if template_asset.asset.type == 'geometry' and template_asset.asset.file.name.endswith('.mtl'):
+			if template_asset.asset.file_type == 'geometry' and template_asset.asset.file.name.endswith('.mtl'):
 				mtl_assets[template_asset.key] = template_asset.asset
-			elif template_asset.asset.type == 'geometry' and template_asset.asset.file.name.endswith('.obj'):
+			elif template_asset.asset.file_type == 'geometry' and template_asset.asset.file.name.endswith('.obj'):
 				obj_assets.append(template_asset.asset)
-			elif template_asset.asset.type == 'geometry' and template_asset.asset.file.name.endswith('.json'):
+			elif template_asset.asset.file_type == 'geometry' and template_asset.asset.file.name.endswith('.json'):
 				json_assets.append(template_asset.asset)
-			elif template_asset.asset.type == 'application':
+			elif template_asset.asset.file_type == 'application':
 				app_asset = template_asset.asset
 			#else:
 			#	print 'asset type %s' % template_asset.asset.type
 		
 		for json_asset in json_assets:
 			loader = JSONLoader()
-			geometry = loader.toGeometry(open(json_asset.file.path).read())
+			json_string = open(json_asset.file.path).read()
+			geometry = loader.toGeometry(json_string)
 			path = '/tmp/prepped_geo-%s' % self.id
 			json_file = file(path, 'wb')
 			json_file.write(to_json(geometry))
