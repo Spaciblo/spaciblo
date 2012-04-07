@@ -69,10 +69,12 @@ SpacibloRenderer.AssetManager = function(imageCallback, templateCallback, geomet
 
 		// Now that we have notified listeners about the template, load the assets.
 		for(var i=0; i < template.templateAssets.length; i++){
-			if(template.templateAssets[i].asset.type == 'texture'){
+			if(template.templateAssets[i].asset.file_type == 'texture'){
 				//self.loadImage('/api/sim/template/' + template.id + '/asset/' + template.templateAssets[i].key);
-			} else if (template.templateAssets[i].asset.type == 'geometry' && !template.templateAssets[i].key.endsWith('.mtl')){
+			} else if (template.templateAssets[i].asset.file_type == 'geometry' && !template.templateAssets[i].key.endsWith('.mtl')){
 				self.loadGeometry(template.id, template.templateAssets[i].id, '/api/sim/template/' + template.id + '/asset/' + template.templateAssets[i].key);
+			} else {
+				console.log('Unknown asset type:', template.templateAssets[i].file_type, template.templateAssets[i])
 			}
 		}
 	}
@@ -146,6 +148,7 @@ SpacibloRenderer.Renderable = function(canvas, uid){
 GLGE.augment(GLGE.Group,SpacibloRenderer.Renderable);
 
 SpacibloRenderer.Renderable.prototype.init = function(nodeJson, templateID){
+	console.log('Initializing renderable', this, nodeJson, templateID);
 	this.name = nodeJson.name;
 	this.group_template = nodeJson.group_template;
 	
@@ -164,7 +167,7 @@ SpacibloRenderer.Renderable.prototype.init = function(nodeJson, templateID){
 }
 
 SpacibloRenderer.Renderable.prototype.setGeometry = function(nodeJson, templateID){
-	console.log('setting', nodeJson, templateID);
+	console.log("Setting renderable geometry", this, nodeJson, templateID);
 	this.removeAllChildren();
 
 	if(nodeJson.mesh != null){
@@ -260,7 +263,6 @@ SpacibloRenderer.Canvas = function(_canvas_id){
 		self.scene.setAmbientColor("#555");
 		self.scene.setBackgroundColor("#55F");
 		self.scene.addLight(light1);
-
 		for(var i=0; i < sceneJson.children.length; i++){
 			var renderable = new SpacibloRenderer.Renderable(self, sceneJson.children[i].uid);
 			renderable.init(sceneJson.children[i]);

@@ -1,1 +1,0 @@
-"""The South migrations used to manage schema changes."""

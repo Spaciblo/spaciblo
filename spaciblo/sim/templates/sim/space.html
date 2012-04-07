@@ -90,13 +90,11 @@ function handle_join_space(successful){
 		console.log("Could not join the space.");
 		return;
 	} else {
-		console.log("Joined the space.");
 		space_client.addUser(Spaciblo.defaultPosition, Spaciblo.defaultOrientation);
 	}
 }
 
 function handle_add_user(){
-	console.log("Handling add user", space_client, space_client.sceneJson, space_client.username);
 	if(sv_canvas.initialize(space_client.sceneJson, space_client.username)){
 		space_client.scene = sv_canvas.scene;
 		setupInput();

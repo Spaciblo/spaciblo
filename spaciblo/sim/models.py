@@ -94,7 +94,7 @@ class Asset(HydrateModel):
 	"""A chunk of typed data used by a template to instantiate an Object in a Space."""
 	APPLICATION_KEY = 'application'
 	TYPE_CHOICES = (('geometry', 'geometry'), ('animation', 'animation'), ('script', 'script'), ('texture', 'texture'), ('text', 'text'), ('application', 'application'))
-	type = models.CharField(max_length=20, choices=TYPE_CHOICES, blank=False, null=False, default='text')
+	file_type = models.CharField(max_length=20, choices=TYPE_CHOICES, blank=False, null=False, default='text')
 	file = models.FileField(upload_to='asset/%Y/%m/%d', null=False, blank=False)
 	prepped_file = models.FileField(upload_to='prepped/%Y/%m/%d', null=True, blank=True) # a version of this asset which is optimized for use, e.g. a JSON representation of a geometry
 	
@@ -116,7 +116,7 @@ class Asset(HydrateModel):
 
 class AssetHandler(BaseHandler):
 	model = Asset
-	fields = ('id', 'type', 'file', 'prepped_file')
+	fields = ('id', 'file_type', 'file', 'prepped_file')
 	allowed_methods = ('GET',)
 
 	@classmethod

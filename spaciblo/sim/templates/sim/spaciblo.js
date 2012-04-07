@@ -78,12 +78,11 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 				self.authentication_handler(self.username != null);
 				break;
 			case 'AddUserResponse':
-				console.log('add user response', spaciblo_event);
 				if(spaciblo_event.joined == true){
 					self.sceneJson = JSON.parse(spaciblo_event.scene_doc);
 				}
 				self.finished_join = true;
-				self.add_user_handler()
+				self.add_user_handler(true);
 				break;
 			case 'NodeAdded':
 				var nodeJson = JSON.parse(spaciblo_event.json_data);
@@ -123,7 +122,6 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 
 		self.wind_client.authentication_handler = function(success){
 			if(success){
-				console.log('Space client authenticated');
 				self.joinSpace();
 			} else {
 				console.log('Space client did not authenticate');
@@ -131,7 +129,6 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 		};
 
 		self.wind_client.subscription_handler = function(channel_id, joined, is_member, is_admin, is_editor){
-			console.log('Space client subscribed', joined);
 			self.join_space_handler(joined);
 		};
 
@@ -139,7 +136,6 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 	}
 
 	self.__open = function(){
-		console.log('Space client opened');
 		self.open_handler();
 	}
 	self.__close = function(){

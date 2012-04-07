@@ -116,7 +116,7 @@ class TemplateDirLoader():
 			if file_type == None: continue
 			asset_file = file(asset_path, 'r')
 			asset = template.get_asset(key=asset_name)
-			if asset == None: asset = Asset(type=file_type)
+			if asset == None: asset = Asset(file_type=file_type)
 			asset.file.save(asset_name, File(asset_file), save=False)
 			asset.save()
 			asset_file.close()
@@ -132,7 +132,7 @@ class TemplateDirLoader():
 				#print 'Creating app archive %s' % app_dir_path
 				app_archive = self.create_app_archive(template_dir_path, application_dir)
 				asset = template.get_asset(key=Asset.APPLICATION_KEY)
-				if asset == None: asset = Asset(type='application')
+				if asset == None: asset = Asset(file_type='application')
 				asset.file.save(Asset.APPLICATION_KEY, File(app_archive), save=False)
 				asset.save()
 				app_archive.close()
