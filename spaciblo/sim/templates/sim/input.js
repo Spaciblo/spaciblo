@@ -17,6 +17,14 @@ SpacibloInput.InputManager = function(_space_client){
 	self.z_delta = 1;
 	self.y_rot_delta = Math.PI / 24.0;
 	
+	self.mouse = new GLGE.MouseInput(space_client.canvas.canvas);
+	self.mouseovercanvas = false;
+ 	self.now = parseInt(new Date().getTime());
+	self.lastTime = parseInt(new Date().getTime());
+
+	space_client.canvas.canvas.onmouseover=function(e){ self.mouseovercanvas=true; }
+	space_client.canvas.canvas.onmouseout=function(e){ self.mouseovercanvas=false; }
+
 	self.getUserNode = function(){
 		if(self.user_node == null){
 			self.user_node = self.space_client.canvas.scene.getUserGroup(self.space_client.username);
@@ -25,15 +33,15 @@ SpacibloInput.InputManager = function(_space_client){
 	}
 	
 	self.relativeMove = function(x, y, z, userNode){
-		userNode.setLoc(userNode.locX + x, userNode.locY + y, userNode.locZ + z);
-		space_client.scene.camera.setLoc(userNode.locX, userNode.locY, userNode.locZ);
+		var rotatedVec = Spaciblo.Quaternion.multiplyVector3(userNode.getQuat(), [x, y, z]);
+		userNode.setLoc(userNode.locX + rotatedVec[0], userNode.locY + rotatedVec[1], userNode.locZ + rotatedVec[2]);
+		self.space_client.scene.camera.setLoc(userNode.locX, userNode.locY, userNode.locZ);
 	}
 	
 	self.relativeRot = function(axis, angle, userNode){
-		var rotQuat = Spaciblo.Quaternion.fromAxisAngle(axis, angle);
-		var quat = Spaciblo.Quaternion.multiply(userNode.getQuat(), rotQuat);
+		var quat = Spaciblo.Quaternion.multiply(userNode.getQuat(), Spaciblo.Quaternion.fromAxisAngle(axis, angle));
 		userNode.setQuatVec(quat);
-		space_client.scene.camera.setQuatVec(quat);
+		self.space_client.scene.camera.setQuatVec(quat);
 	}
 
 	self.handle_keydown = function(event){
@@ -85,8 +93,8 @@ SpacibloInput.InputManager = function(_space_client){
 			console.log('No user thing');
 			return;
 		}
-		space_client.scene.camera.setLoc(Spaciblo.defaultPosition[0], Spaciblo.defaultPosition[1], Spaciblo.defaultPosition[2]);
-		space_client.scene.camera.setQuat(Spaciblo.defaultRotation[0], Spaciblo.defaultRotation[1], Spaciblo.defaultRotation[2], Spaciblo.defaultRotation[3]);
+		self.space_client.scene.camera.setLoc(Spaciblo.defaultPosition[0], Spaciblo.defaultPosition[1], Spaciblo.defaultPosition[2]);
+		self.space_client.scene.camera.setQuat(Spaciblo.defaultRotation[0], Spaciblo.defaultRotation[1], Spaciblo.defaultRotation[2], Spaciblo.defaultRotation[3]);
 		userNode.setLoc(Spaciblo.defaultPosition[0], Spaciblo.defaultPosition[1], Spaciblo.defaultPosition[2]);
 		userNode.setQuat(Spaciblo.defaultRotation[0], Spaciblo.defaultRotation[1], Spaciblo.defaultRotation[2], Spaciblo.defaultRotation[3]);
 		var event = new Wind.Events.UserMoveRequest(self.space_client.username, [userNode.locX, userNode.locY, userNode.locZ], [userNode.quatX, userNode.quatY, userNode.quatZ, userNode.quatW]);
@@ -100,4 +108,36 @@ SpacibloInput.InputManager = function(_space_client){
 	self.add_event_source = function(node){
 		$(node).keydown(self.handle_keydown).keyup(self.handle_keyup);
 	}
+
+	self.mouse_look = function(){
+		self.now = parseInt(new Date().getTime());
+		if(self.mouseovercanvas){
+			var canvasElement = space_client.canvas.canvas;
+			var mousepos = self.mouse.getMousePosition();
+			mousepos.x = mousepos.x - canvasElement.offsetLeft;
+			mousepos.y = mousepos.y - canvasElement.offsetTop;
+
+			var inc = (mousepos.y - (canvasElement.offsetHeight / 2)) / 500;
+			var trans = GLGE.mulMat4Vec4(self.space_client.scene.camera.getRotMatrix(), [0,0,-1,1]);
+			var mag = Math.pow(Math.pow(trans[0],2) + Math.pow(trans[1],2), 0.5);
+
+			trans[0] = trans[0] / mag;
+			trans[1] = trans[1] / mag;
+
+			var width = canvasElement.offsetWidth;
+			if(mousepos.x < width*0.3){
+				var turn = Math.pow((mousepos.x-width*0.3)/(width*0.3),2)*0.005*(self.now-self.lastTime);
+				self.relativeRot([0, 1, 0], turn, self.getUserNode());
+			}
+			if(mousepos.x > width*0.7){
+				var turn = Math.pow((mousepos.x-width*0.7)/(width*0.3),2)*0.005*(self.now-self.lastTime);
+				self.relativeRot([0, 1, 0], -turn, self.getUserNode());
+			}
+		}
+		self.lastTime = self.now;
+	}
+
+
+
+
 }

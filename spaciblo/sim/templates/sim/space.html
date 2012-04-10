@@ -40,13 +40,6 @@ var space_client = null;
 var sv_canvas = null;
 var input_manager = null;
 
-// Temp
-var mouse = null;
-var mouseovercanvas = false;
-var now = parseInt(new Date().getTime());
-var lastTime = parseInt(new Date().getTime());
-var spinUID = null;
-
 function initialize(){
 	sv_canvas = new SpacibloRenderer.Canvas('canvas');
 	space_client = new Spaciblo.SpaceClient({{ space.id }}, sv_canvas);
@@ -60,10 +53,6 @@ function initialize(){
 	space_client.open();
 	$("#key-catcher").focus();
 	$("#canvas").click(function(e){ $("#key-catcher").focus(); });
-
-	mouse = new GLGE.MouseInput(document.getElementById('canvas'));
-	document.getElementById("canvas").onmouseover=function(e){mouseovercanvas=true;}
-	document.getElementById("canvas").onmouseout=function(e){mouseovercanvas=false;}
 }
 
 function handle_client_open(){
@@ -123,18 +112,8 @@ function setupInput(){
 }
 
 function tick() {
-	now = parseInt(new Date().getTime());
-	//mouselook();
-	if(spinUID != null){
-		var node = space_client.scene.getNode(spinUID);
-		if(node){
-			node.setRot(node.rotX + 0.1, node.rotY, node.rotZ);
-		} else {
-			console.log("No such node: "+spinUID);
-		}
-	}
+	input_manager.mouse_look();
 	sv_canvas.render();
-	lastTime = now;
 }
 
 function user_message_handler(username, message){
@@ -166,42 +145,6 @@ function handle_command_input(){
 	
 	$("#key-catcher").focus();
 }
-
-function mouselook(){
-	if(mouseovercanvas){
-		var containerElement = document.getElementById("sv-1");
-		var canvasElement = document.getElementById('canvas');
-		var mousepos = mouse.getMousePosition();
-		mousepos.x = mousepos.x - containerElement.offsetLeft;
-		mousepos.y = mousepos.y - containerElement.offsetTop;
-
-		var camera = space_client.scene.camera;
-		var camerarot = camera.getRotation();
-		if(isNaN(camerarot.x)){
-			return;
-		}
-
-		var inc = (mousepos.y - (canvasElement.offsetHeight / 2)) / 500;
-		var trans = GLGE.mulMat4Vec4(camera.getRotMatrix(), [0,0,-1,1]);
-		var mag = Math.pow(Math.pow(trans[0],2) + Math.pow(trans[1],2), 0.5);
-
-		trans[0] = trans[0] / mag;
-		trans[1] = trans[1] / mag;
-
-		camera.setRotX(1.56 - trans[1]*inc);
-		camera.setRotZ(-trans[0]*inc);
-		var width = canvasElement.offsetWidth;
-		if(mousepos.x < width*0.3){
-			var turn = Math.pow((mousepos.x-width*0.3)/(width*0.3),2)*0.005*(now-lastTime);
-			camera.setRotY(camerarot.y+turn);
-		}
-		if(mousepos.x > width*0.7){
-			var turn = Math.pow((mousepos.x-width*0.7)/(width*0.3),2)*0.005*(now-lastTime);
-			camera.setRotY(camerarot.y-turn);
-		}
-	}
-}
-
 
 $(document).ready(initialize);
 </script>
