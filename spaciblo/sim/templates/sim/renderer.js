@@ -171,18 +171,16 @@ SpacibloRenderer.Renderable.prototype.init = function(nodeJson, templateID){
 
 SpacibloRenderer.Renderable.prototype.setGeometry = function(nodeJson, templateID){
 	this.removeAllChildren();
-
 	if(nodeJson.mesh != null){
 		var node = new GLGE.Object(nodeJson.uid);
 		if(nodeJson.material){
 			var material = new GLGE.Material(nodeJson.material.uid);
-			material.color = {r:1,g:0.5,b:1};//{r:nodeJson.material.color[0], g:nodeJson.material.color[1], b:nodeJson.material.color[2]};
+			material.color = {r:nodeJson.material.color[0], g:nodeJson.material.color[1], b:nodeJson.material.color[2]};
 			material.specColor = {r:nodeJson.material.specColor[0], g:nodeJson.material.specColor[1], b:nodeJson.material.specColor[2]};
 			material.setShininess(nodeJson.material.shine);
 			material.setAlpha(nodeJson.material.alpha);
 			if(nodeJson.material.texture){
 				if(nodeJson.material.texture.key != null){
-					console.log('material', this, nodeJson, nodeJson.material.texture);
 					var texture = new GLGE.Texture(nodeJson.material.texture.uid);
 					texture.id = nodeJson.material.texture.key;
 					texture.setSrc('/api/sim/template/' + templateID + '/asset/' + nodeJson.material.texture.key)
@@ -191,7 +189,7 @@ SpacibloRenderer.Renderable.prototype.setGeometry = function(nodeJson, templateI
 					layer.setTexture(material.textures[0]);
 					material.addMaterialLayer(layer);
 				} else {
-					console.log("Ignoring keyless texture", this, nodeJson, nodeJson.material.texture);
+					console.log("Ignoring keyless texture", this, nodeJson, templateID, nodeJson.material.texture);
 				}
 			}
 			node.setMaterial(material);

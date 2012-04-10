@@ -4,27 +4,27 @@
 
 {% block sub-style%}
 .space-viewer {
-	width: 800px;
+	width: 950px;
 }
 .sv-renderer {
 	background-color: #FFF;
 	border: solid 1px #000;
-	width: 800px;
-	height: 200px;
+	width: 950px;
+	height: 330px;
 }
 .sv-message-panel {
 	margin: 5px 0px;
 	padding: 5px 5px;
-	width: 788px;
-	height: 150px;
+	width: 940px;
+	height: 120px;
 	border: solid 1px #345;
 	overflow: auto;
 }
-#key-catcher { width: 0px; height: 0px; z-index: -10; position: relative; top: 30px; left: 30px;}
+#key-catcher { width: 0px; height: 0px; z-index: -10; position: absolute; top: 30px; left: 30px;}
 .user-message{
 	margin: 0 0 5px 0;
 }
-.space-viewer input[type='text'] { width: 745px; }
+.space-viewer input[type='text'] { width: 895px; }
 .space-viewer input [type='submit'] { width: 40px; }
 {% endblock %}
 
@@ -151,12 +151,12 @@ $(document).ready(initialize);
 {% endblock %}
 
 {% block content%}
-<input type="text" id="key-catcher" size="1" />
 <div id="sv-1" class="space-viewer">
-	<canvas id="canvas" class="sv-renderer" width="800" height="300"></canvas>
+	<canvas id="canvas" class="sv-renderer" width="950" height="330"></canvas>
 	<div id="sv-message-panel" class="sv-message-panel">&nbsp;</div>
 	<form onsubmit="handle_command_input(); return false;">
 		<input type="text" id="command-input" name="command-input" /><input type="submit" name="send" value="send" />
 	</form>
 </div>
+<input type="text" id="key-catcher" size="1" />
 {% endblock %}

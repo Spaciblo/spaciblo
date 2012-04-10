@@ -21,6 +21,7 @@ class SpaceChannel(Channel):
 	def handle_subscribe_request(self, connection, event):
 		import spaciblo.sim
 		allow_join, space_member = spaciblo.sim.models.Space.objects.get_membership(self.space, connection.user)
+		print 'subscribe request', connection.user, allow_join, space_member
 		return (allow_join, SubscribeResponse(channel_id=self.channel_id, joined=allow_join))
 
 	@classmethod

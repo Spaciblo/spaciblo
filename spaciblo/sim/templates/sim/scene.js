@@ -44,6 +44,7 @@ GLGE.Placeable.prototype.setQuatVec=function(q){
 	var qc = Spaciblo.Quaternion.normalize(q);
 	this.setQuat(qc[0], qc[1], qc[2], qc[3]);
 };
+GLGE.Placeable.prototype.getLoc=function(){return [this.locX, this.locY, this.locZ];}
 GLGE.Placeable.prototype.getQuat=function(){return [this.quatX, this.quatY, this.quatZ, this.quatW];}
 GLGE.Placeable.prototype.getRot=function(){return [this.rotX, this.rotY, this.rotZ];}
 

@@ -45,6 +45,8 @@ SpacibloInput.InputManager = function(_space_client){
 	}
 
 	self.handle_keydown = function(event){
+		if(event.ctrlKey) return true;
+		if(event.metaKey) return true;
 		var userNode = self.getUserNode();
 		if(userNode == null){
 			console.log('No user thing');

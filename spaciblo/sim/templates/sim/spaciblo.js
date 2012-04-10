@@ -78,13 +78,11 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 				self.add_user_handler(spaciblo_event.joined);
 				break;
 			case 'UserAdded':
-				console.log('User added', spaciblo_event);
 				break;
 			case 'NodeAdded':
 				var nodeJson = JSON.parse(spaciblo_event.json_data);
-				console.log('Node added', nodeJson, nodeJson.username);
 				if(self.scene.getNode(nodeJson.uid)){
-					console.log("Tried to add a duplicate node:", nodeJson);
+					console.log("Tried to add a duplicate node:", nodeJson.uid, nodeJson);
 					break;
 				}
 				var renderable = new SpacibloRenderer.Renderable(self, nodeJson.uid);
@@ -97,12 +95,15 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 					self.scene.camera.setQuat(renderable.quatX, renderable.quatY, renderable.quatZ, renderable.quatW);
 				}
 				self.scene.addChild(renderable);
+				self.canvas.requestTemplates(renderable);
 				break;
 			case 'PlaceableMoved':
 				var node = self.scene.getNode(spaciblo_event.uid);
 				if(node){
-					node.setLoc(spaciblo_event.position[0], spaciblo_event.position[1], spaciblo_event.position[2]);
-					node.setQuat(spaciblo_event.orientation[0], spaciblo_event.orientation[1], spaciblo_event.orientation[2], spaciblo_event.orientation[3]);
+					if(node.username != self.username){
+						node.setLoc(spaciblo_event.position[0], spaciblo_event.position[1], spaciblo_event.position[2]);
+						node.setQuat(spaciblo_event.orientation[0], spaciblo_event.orientation[1], spaciblo_event.orientation[2], spaciblo_event.orientation[3]);
+					}
 				} else {
 					console.log("Tried to move an unknown node: " + spaciblo_event.uid);
 				}

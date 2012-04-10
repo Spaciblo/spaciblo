@@ -58,6 +58,8 @@ class SpaceDirLoader():
 		body_template = Template.objects.get(name=body_name)
 		space, created = Space.objects.get_or_create(name=space_name, default_body=body_template, slug=slugify(space_name))
 		space.add_member(owner, is_admin=True, is_editor=True)
+		for user in User.objects.exclude(id=owner.id): space.add_member(user, is_admin=False, is_editor=False)
+		space.state = 'open'
 		
 		things_reader = csv.reader(open(things_path))
 		scene = Scene()
@@ -68,6 +70,7 @@ class SpaceDirLoader():
 				continue
 			template = Template.objects.get(name=template_name)
 			node = Group()
+			node.name = template.name
 			node.group_template = GroupTemplate(template_id=template.id, name=template.name)
 			node.set_loc([float(thing_row[1]), float(thing_row[2]), float(thing_row[3])])
 			node.set_quat([float(thing_row[4]), float(thing_row[5]), float(thing_row[6]), float(thing_row[7])])
@@ -84,7 +87,7 @@ class TemplateDirLoader():
 	def load(self, template_dir_path, owner):
 		template_name = os.path.basename(template_dir_path)
 		seat_position = '0,0,0'
-		seat_orientation = '1,0,0,0'
+		seat_orientation = '0,0,0,1'
 		application_dir = None
 		
 		properties_path = os.path.join(template_dir_path, TEMPLATE_PROPERTIES_FILE_NAME)

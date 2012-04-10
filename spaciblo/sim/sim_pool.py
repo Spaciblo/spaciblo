@@ -13,7 +13,7 @@ from blank_slate.wind.handler import to_json, from_json
 
 from spaciblo.sim.events import SpaceChannel, NodeAdded, NodeRemoved, PlaceableMoved
 from spaciblo.sim.models import Space
-from spaciblo.sim.glge import Scene, Object, Group
+from spaciblo.sim.glge import Scene, Object, Group, GroupTemplate
 
 DEFAULT_SIM_POOL = None
 
@@ -83,6 +83,7 @@ class Simulator:
 					user_node.username = event.username
 					user_node.set_loc(event.position)
 					user_node.set_quat(event.orientation)
+					user_node.group_template = GroupTemplate(template_id=self.space.default_body.id, name=self.space.default_body.name)
 					self.scene.children.append(user_node)
 				self.client.send_event(NodeAdded(self.scene.uid, to_json(user_node)))
 

@@ -39,7 +39,9 @@ class SpaceManager(models.Manager):
 		try:
 			space_member = SpaceMember.objects.get(space=space, member=user)
 		except:
+			traceback.print_exc()
 			space_member = None
+		print space_member, space.state, space.max_guests
 		if space.state == 'closed': return (False, space_member)
 		if space.state == 'admin_only' and (space_member == None or not space_member.is_admin): return (False, space_member)
 		if space.max_guests > 0: return (True, space_member) #TODO respect the guest limits
@@ -203,6 +205,7 @@ class Template(HydrateModel):
 			loader = JSONLoader()
 			json_string = open(json_asset.file.path).read()
 			geometry = loader.toGeometry(json_string)
+			if not geometry.name: geometry.name = self.name
 			path = '/tmp/prepped_geo-%s' % self.id
 			json_file = file(path, 'wb')
 			json_file.write(to_json(geometry))
