@@ -74,7 +74,7 @@ SpacibloRenderer.AssetManager = function(imageCallback, templateCallback, geomet
 			} else if (template.templateAssets[i].asset.file_type == 'geometry' && !template.templateAssets[i].key.endsWith('.mtl')){
 				self.loadGeometry(template.id, template.templateAssets[i].id, '/api/sim/template/' + template.id + '/asset/' + template.templateAssets[i].key);
 			} else {
-				console.log('Unknown asset type:', template.templateAssets[i].file_type, template.templateAssets[i])
+				//console.log('Unknown asset type:', template.templateAssets[i].asset.file_type, template.templateAssets[i])
 			}
 		}
 	}
@@ -144,18 +144,21 @@ SpacibloRenderer.Renderable = function(canvas, uid){
 	this.canvas = canvas;
 	this.children = [];
 	this.group_template = null;
+	this.username = null;
 }	
 GLGE.augment(GLGE.Group,SpacibloRenderer.Renderable);
+GLGE.REGISTER_ASSETS=true;
 
 SpacibloRenderer.Renderable.prototype.init = function(nodeJson, templateID){
-	console.log('Initializing renderable', this, nodeJson, templateID);
 	this.name = nodeJson.name;
+	this.username = nodeJson.username;
 	this.group_template = nodeJson.group_template;
 	
 	this.setLoc(nodeJson.locX, nodeJson.locY, nodeJson.locZ);
 	this.setScale(nodeJson.scaleX, nodeJson.scaleY, nodeJson.scaleZ);
 
 	if(nodeJson.mode == GLGE.P_EULER){
+		console.log('euler mode!', this, nodeJson);
 		this.setRot(nodeJson.rotX, nodeJson.rotY, nodeJson.rotZ);
 	} else if(nodeJson.mode == GLGE.P_QUAT){
 		this.setQuat(nodeJson.quatX, nodeJson.quatY, nodeJson.quatZ, nodeJson.quatW);
@@ -167,7 +170,6 @@ SpacibloRenderer.Renderable.prototype.init = function(nodeJson, templateID){
 }
 
 SpacibloRenderer.Renderable.prototype.setGeometry = function(nodeJson, templateID){
-	console.log("Setting renderable geometry", this, nodeJson, templateID);
 	this.removeAllChildren();
 
 	if(nodeJson.mesh != null){
@@ -178,15 +180,19 @@ SpacibloRenderer.Renderable.prototype.setGeometry = function(nodeJson, templateI
 			material.specColor = {r:nodeJson.material.specColor[0], g:nodeJson.material.specColor[1], b:nodeJson.material.specColor[2]};
 			material.setShininess(nodeJson.material.shine);
 			material.setAlpha(nodeJson.material.alpha);
-			console.log('texture', nodeJson.material.texture, this);
 			if(nodeJson.material.texture){
-				var texture = new GLGE.Texture(nodeJson.material.texture.uid);
-				texture.id = nodeJson.material.texture.key;
-				texture.setSrc('/api/sim/template/' + templateID + '/asset/' + nodeJson.material.texture.key)
-				material.addTexture(texture);
-				var layer = new GLGE.MaterialLayer();
-				layer.setTexture(material.textures[0]);
-				material.addMaterialLayer(layer);
+				if(nodeJson.material.texture.key != null){
+					console.log('material', this, nodeJson, nodeJson.material.texture);
+					var texture = new GLGE.Texture(nodeJson.material.texture.uid);
+					texture.id = nodeJson.material.texture.key;
+					texture.setSrc('/api/sim/template/' + templateID + '/asset/' + nodeJson.material.texture.key)
+					material.addTexture(texture);
+					var layer = new GLGE.MaterialLayer();
+					layer.setTexture(material.textures[0]);
+					material.addMaterialLayer(layer);
+				} else {
+					console.log("Ignoring keyless texture", this, nodeJson, nodeJson.material.texture);
+				}
 			}
 			node.setMaterial(material);
 		} else {
@@ -230,7 +236,7 @@ SpacibloRenderer.Canvas = function(_canvas_id){
 	self.canvas_id = _canvas_id;
 	self.username = null;
 	self.canvas = null;
-	self.gameRenderer = null;
+	self.glgeRenderer = null;
 	self.scene = null;
 
 	self.initialize = function(sceneJson, username) {
@@ -238,40 +244,34 @@ SpacibloRenderer.Canvas = function(_canvas_id){
 		self.canvas = document.getElementById(self.canvas_id);		
 		if(self.canvas == null) return false;
 
-		self.gameRenderer = new GLGE.Renderer(self.canvas);
+		self.glgeRenderer = new GLGE.Renderer(self.canvas);
 
 		var light1 = new GLGE.Light(GLGE.Assets.createUUID());
 		light1.setLocX(-3);
 		light1.setLocY(15)
-		light1.setLocZ(-7);
+		light1.setLocZ(7);
 		light1.setAttenuationQuadratic(0.00001);
 		light1.setAttenuationLinear(0.00000001);
 		light1.setAttenuationConstant(1);
 		light1.setType(GLGE.L_POINT);
-
-		var light2 = new GLGE.Light(GLGE.Assets.createUUID());
-		light2.setLocX(3);
-		light2.setLocY(15)
-		light2.setLocZ(-7);
-		light2.setAttenuationQuadratic(0.00001);
-		light2.setAttenuationLinear(0.00000001);
-		light2.setAttenuationConstant(1.5);
-		light2.setType(GLGE.L_POINT);
 
 		self.scene = new GLGE.Scene();
 		self.scene.obj_name = "I am the scene";
 		self.scene.setAmbientColor("#555");
 		self.scene.setBackgroundColor("#55F");
 		self.scene.addLight(light1);
+		self.scene.camera.setLoc(Spaciblo.defaultPosition[0], Spaciblo.defaultPosition[1], Spaciblo.defaultPosition[2]);
+		self.scene.camera.setQuat(Spaciblo.defaultRotation[0], Spaciblo.defaultRotation[1], Spaciblo.defaultRotation[2], Spaciblo.defaultRotation[3]);
 		for(var i=0; i < sceneJson.children.length; i++){
 			var renderable = new SpacibloRenderer.Renderable(self, sceneJson.children[i].uid);
 			renderable.init(sceneJson.children[i]);
 			self.scene.addChild(renderable);
+			if(renderable.username == self.username){
+				self.scene.camera.setLoc(renderable.locX, renderable.locY, renderable.locZ);
+				self.scene.camera.setQuat(renderable.quatX, renderable.quatY, renderable.quatZ, renderable.quatW);
+			}
 		}
-
-		self.gameRenderer.setScene(self.scene);
-		self.scene.camera.setRot(Spaciblo.defaultRotation[0], Spaciblo.defaultRotation[1], Spaciblo.defaultRotation[2]);
-		self.scene.camera.setLoc(Spaciblo.defaultPosition[0], Spaciblo.defaultPosition[1], Spaciblo.defaultPosition[2]);
+		self.glgeRenderer.setScene(self.scene);
 
 		self.requestTemplates(self.scene);
 
@@ -287,14 +287,7 @@ SpacibloRenderer.Canvas = function(_canvas_id){
 	}
 
 	self.render = function() {
-		/*
-		var userThing = self.scene.thing.getUserThing(self.username);
-		if(userThing){
-			self.scene.camera.setLoc(userThing.position.x, userThing.position.y, userThing.position.z);
-			self.scene.camera.setQuat(userThing.orientation.x, userThing.orientation.y, userThing.orientation.z, userThing.orientation.s);
-		}
-		*/
-		self.gameRenderer.render();
+		self.glgeRenderer.render();
 	}
 
 	self.close = function(){

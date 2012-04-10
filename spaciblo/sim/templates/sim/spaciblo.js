@@ -36,8 +36,8 @@ Spaciblo.stringify = function(hydrateObj){
 }
 
 
-Spaciblo.defaultRotation = [1.56, 0, 0]; //1.56
-Spaciblo.defaultPosition = [0.01, 0.01, 0.01];
+Spaciblo.defaultRotation = [0, 0, 0, 1];
+Spaciblo.defaultPosition = [0.0, 0.0, 0.0];
 
 Spaciblo.SpaceClient = function(space_id, canvas) {
 	var self = this;
@@ -64,36 +64,38 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 		switch(spaciblo_event.type) {
 			case 'Heartbeat':
 				break;
+			case 'UserMoveRequest':
+				// TODO stop these from being sent to all clients
+				break;
 			case 'UserMessage':
 				self.user_message_handler(spaciblo_event.username, spaciblo_event.message);
-				break;
-			case 'AuthenticationResponse':
-				if(spaciblo_event.authenticated){
-					self.username = spaciblo_event.username;
-				} else {
-					self.username = null;
-					console.log("failed to authenticate");
-				}
-				self.finished_auth = true;
-				self.authentication_handler(self.username != null);
 				break;
 			case 'AddUserResponse':
 				if(spaciblo_event.joined == true){
 					self.sceneJson = JSON.parse(spaciblo_event.scene_doc);
 				}
 				self.finished_join = true;
-				self.add_user_handler(true);
+				self.add_user_handler(spaciblo_event.joined);
+				break;
+			case 'UserAdded':
+				console.log('User added', spaciblo_event);
 				break;
 			case 'NodeAdded':
 				var nodeJson = JSON.parse(spaciblo_event.json_data);
-				break;
+				console.log('Node added', nodeJson, nodeJson.username);
 				if(self.scene.getNode(nodeJson.uid)){
-					console.log("Tried to add a duplicate node: " + nodeJson.uid);
+					console.log("Tried to add a duplicate node:", nodeJson);
 					break;
 				}
 				var renderable = new SpacibloRenderer.Renderable(self, nodeJson.uid);
 				renderable.init(nodeJson);
-				if(nodeJson.username) renderable.username = nodeJson.username;
+				if(nodeJson.username) {
+					renderable.username = nodeJson.username;
+				}
+				if(renderable.username == self.username){
+					self.scene.camera.setLoc(renderable.locX, renderable.locY, renderable.locZ);
+					self.scene.camera.setQuat(renderable.quatX, renderable.quatY, renderable.quatZ, renderable.quatW);
+				}
 				self.scene.addChild(renderable);
 				break;
 			case 'PlaceableMoved':
@@ -122,6 +124,7 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 
 		self.wind_client.authentication_handler = function(success){
 			if(success){
+				self.username = self.wind_client.username;
 				self.joinSpace();
 			} else {
 				console.log('Space client did not authenticate');
@@ -213,3 +216,158 @@ Spaciblo.parseLocationParameters = function(){
 
 Spaciblo.locationParameters = Spaciblo.parseLocationParameters();
 
+
+/**
+ * The Quaternion code is derived from Three.js which is licensed under the MIT license: https://github.com/mrdoob/three.js/blob/master/LICENSE
+ * Original source here: https://github.com/mrdoob/three.js/blob/master/src/core/Quaternion.js
+ * @author mikael emtinger / http://gomo.se/
+ * @author alteredq / http://alteredqualia.com/
+ * 
+ * All quaternions are arrays in the form [x, y, z, w]
+ */
+
+Spaciblo.Quaternion = {};
+
+Spaciblo.Quaternion.copy = function(q) {
+	var result = [];
+	result[0] = q[0];
+	result[1] = q[1];
+	result[2] = q[2];
+	result[3] = q[3];
+	return result;
+};
+
+Spaciblo.Quaternion.fromEuler = function(vec) {
+	var c = Math.PI / 360; // 0.5 * Math.PI / 360, // 0.5 is an optimization
+	var x = vec[0] * c;
+	var y = vec[1] * c;
+	var z = vec[2] * c;
+
+	var c1 = Math.cos( y  ),
+		s1 = Math.sin( y  ),
+		c2 = Math.cos( -z ),
+		s2 = Math.sin( -z ),
+		c3 = Math.cos( x  ),
+		s3 = Math.sin( x  );
+
+	var c1c2 = c1 * c2,
+		s1s2 = s1 * s2;
+
+	var n_w = c1c2 * c3  - s1s2 * s3;
+  	var n_x = c1c2 * s3  + s1s2 * c3;
+	var n_y = s1 * c2 * c3 + c1 * s2 * s3;
+	var n_z = c1 * s2 * c3 - s1 * c2 * s3;
+	return [n_x, n_y, n_z, n_w];
+};
+
+Spaciblo.Quaternion.fromAxisAngle = function(axis, angle) {
+	// axis have to be normalized
+	// from http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToQuaternion/index.htm
+	var halfAngle = angle / 2;
+	var s = Math.sin( halfAngle );
+	n_x = axis[0] * s;
+	n_y = axis[1] * s;
+	n_z = axis[2] * s;
+	n_w = Math.cos( halfAngle );
+	return [n_x, n_y, n_z, n_w];
+};
+
+Spaciblo.Quaternion.calculateW = function(vec) {
+	return -1 * Math.sqrt( Math.abs( 1.0 - vec[0] * vec[0] - vec[1] * vec[1] - vec[2] * vec[2] ) );
+};
+
+Spaciblo.Quaternion.inverse = function(q) {
+	var result = Spaciblo.Quaternion.copy(q);
+	result[0] *= -1;
+	result[1] *= -1;
+	result[2] *= -1;
+	return result;
+};
+
+Spaciblo.Quaternion.length = function(q) { return Math.sqrt( q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3] ); };
+
+Spaciblo.Quaternion.normalize = function(q) {
+	var l = Spaciblo.Quaternion.length(q);
+	if (l === 0) return [0,0,0,0]; 
+
+	var qc = Spaciblo.Quaternion.copy(q);
+	l = 1 / l;
+	qc[0] = qc[0] * l;
+	qc[1] = qc[1] * l;
+	qc[2] = qc[2] * l;
+	qc[3] = qc[3] * l;
+	return qc;
+};
+
+Spaciblo.Quaternion.multiply = function(q1, q2) {
+	// from http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
+	var q = []
+	q[0] =  q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0];
+	q[1] = -q1[0] * q2[2] + q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1];
+	q[2] =  q1[0] * q2[1] - q1[1] * q2[0] + q1[2] * q2[3] + q1[3] * q2[2];
+	q[3] = -q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] + q1[3] * q2[3];
+	return q;
+};
+
+Spaciblo.Quaternion.multiplyVector3 = function (q, vec) {
+	var dest = [0,0,0];
+
+	var x = vec[0];
+	var y = vec[1];
+	var z = vec[2];
+	var qx = q[0];
+	var qy = q[1];
+	var qz = q[2]
+	var qw = q[3];
+
+	// calculate quat * vec
+	var ix =  qw * x + qy * z - qz * y,
+		iy =  qw * y + qz * x - qx * z,
+		iz =  qw * z + qx * y - qy * x,
+		iw = -qx * x - qy * y - qz * z;
+
+	// calculate result * inverse quat
+	dest[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+	dest[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+	dest[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+
+	return dest;
+};
+
+Spaciblo.Quaternion.slerp = function ( qa, qb, qm, t ) {
+	// http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
+	var cosHalfTheta = qa[3] * qb[3] + qa[0] * qb[0] + qa[1] * qb[1] + qa[2] * qb[2];
+
+	if (cosHalfTheta < 0) {
+		qm[3] = -qb[3]; qm[0] = -qb[0]; qm[1] = -qb[1]; qm[2] = -qb[2];
+		cosHalfTheta = -cosHalfTheta;
+	} else {
+		qm = Spaciblo.Quaternion.copy(qb);
+	}
+
+	if ( Math.abs( cosHalfTheta ) >= 1.0 ) {
+		qm[3] = qa[3]; qm[0] = qa[0]; qm[1] = qa[1]; qm[2] = qa[2];
+		return qm;
+	}
+
+	var halfTheta = Math.acos( cosHalfTheta ),
+	sinHalfTheta = Math.sqrt( 1.0 - cosHalfTheta * cosHalfTheta );
+
+	if ( Math.abs( sinHalfTheta ) < 0.001 ) {
+		qm[3] = 0.5 * ( qa[3] + qb[3] );
+		qm[0] = 0.5 * ( qa[0] + qb[0] );
+		qm[1] = 0.5 * ( qa[1] + qb[1] );
+		qm[2] = 0.5 * ( qa[2] + qb[2] );
+		return qm;
+	}
+
+	var ratioA = Math.sin( ( 1 - t ) * halfTheta ) / sinHalfTheta,
+	ratioB = Math.sin( t * halfTheta ) / sinHalfTheta;
+
+	qm[3] = ( qa[3] * ratioA + qm[3] * ratioB );
+	qm[0] = ( qa[0] * ratioA + qm[0] * ratioB );
+	qm[1] = ( qa[1] * ratioA + qm[1] * ratioB );
+	qm[2] = ( qa[2] * ratioA + qm[2] * ratioB );
+
+	return qm;
+}

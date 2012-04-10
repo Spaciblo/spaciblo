@@ -39,3 +39,13 @@ GLGE.Group.prototype.getNodesByTemplate = function(template_id, results){
 	return results;
 }
 GLGE.Scene.prototype.getNodesByTemplate = GLGE.Group.prototype.getNodesByTemplate;
+
+GLGE.Placeable.prototype.setQuatVec=function(q){
+	var qc = Spaciblo.Quaternion.normalize(q);
+	this.setQuat(qc[0], qc[1], qc[2], qc[3]);
+};
+GLGE.Placeable.prototype.getQuat=function(){return [this.quatX, this.quatY, this.quatZ, this.quatW];}
+GLGE.Placeable.prototype.getRot=function(){return [this.rotX, this.rotY, this.rotZ];}
+
+GLGE.augment(GLGE.Placeable,GLGE.Group);
+GLGE.augment(GLGE.Placeable,GLGE.Camera);

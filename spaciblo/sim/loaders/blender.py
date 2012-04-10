@@ -29,7 +29,7 @@ class JSONLoader:
 			obj.name = obj_data['name']
 			obj.set_loc(obj_data['location'])
 			obj.set_scale(obj_data['scale'])
-			obj.set_rot(obj_data['rotation'])
+			obj.set_quat(obj_data['rotation'])
 			obj.mesh = Mesh()
 			obj.mesh.positions = obj_data['data']['vertices']
 			obj.mesh.normals = obj_data['data']['normals']

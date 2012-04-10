@@ -42,7 +42,11 @@ class Simulator:
 	@property
 	def channel_id(self): return SpaceChannel.generate_channel_id(self.space.id)
 
-	def handle_event(self, event): self.event_queue.put(event)
+	def handle_event(self, event):
+		if event:
+			self.event_queue.put(event)
+		else:
+			print 'Sim client closed', self.space.id
 
 	def __unicode__(self): return "Simulator for %s" % self.space
 
@@ -74,15 +78,13 @@ class Simulator:
 			
 			if event.event_name() == 'UserAdded':
 				user_node = self.scene.get_user(event.username)
-				if user_node is None:
+				if user_node == None:
 					user_node = Group()
 					user_node.username = event.username
 					user_node.set_loc(event.position)
 					user_node.set_quat(event.orientation)
 					self.scene.children.append(user_node)
-					self.client.send_event(NodeAdded(self.scene.uid, to_json(user_node)))
-				else:
-					print "Already have a user with id", event.username
+				self.client.send_event(NodeAdded(self.scene.uid, to_json(user_node)))
 
 			elif event.event_name() == 'NodeAdded':
 				pass
@@ -95,17 +97,19 @@ class Simulator:
 					self.client.send_event(NodeRemoved(user_node.uid))
 
 			elif event.event_name() == 'UserMoveRequest':
-				if event.connection.user != None and event.username == event.connection.user.username:
-					user_node = self.scene.get_user(event.username)
-					if user_node == None:
-						print "No such user node: %s" % event.username
-					else:
-						user_node.set_loc(event.position)
-						user_node.set_quat(event.orientation)
-						response = PlaceableMoved(user_node.uid, user_node.loc, user_node.quat)
-						self.client.send_event(response)
+				user_node = self.scene.get_user(event.username)
+				if user_node == None:
+					print "No such user node: %s" % event.username
+				else:
+					user_node.set_loc(event.position)
+					user_node.set_quat(event.orientation)
+					response = PlaceableMoved(user_node.uid, user_node.loc, user_node.quat)
+					self.client.send_event(response)
 
 			elif event.event_name() == 'TemplateUpdated':
+				pass
+
+			elif event.event_name() == 'PlaceableMoved':
 				pass
 
 			elif event.event_name() == 'AuthenticationResponse':
