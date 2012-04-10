@@ -45,8 +45,6 @@ class Simulator:
 	def handle_event(self, event):
 		if event:
 			self.event_queue.put(event)
-		else:
-			print 'Sim client closed', self.space.id
 
 	def __unicode__(self): return "Simulator for %s" % self.space
 

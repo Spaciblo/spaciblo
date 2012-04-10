@@ -41,7 +41,6 @@ class SpaceManager(models.Manager):
 		except:
 			traceback.print_exc()
 			space_member = None
-		print space_member, space.state, space.max_guests
 		if space.state == 'closed': return (False, space_member)
 		if space.state == 'admin_only' and (space_member == None or not space_member.is_admin): return (False, space_member)
 		if space.max_guests > 0: return (True, space_member) #TODO respect the guest limits
