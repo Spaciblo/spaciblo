@@ -372,3 +372,33 @@ Spaciblo.Quaternion.slerp = function ( qa, qb, qm, t ) {
 
 	return qm;
 }
+
+Spaciblo.Quaternion.brokenToEuler = function(quat){
+	// This isn't right.  Don't use it.  Perhaps it's wrong handed?
+	var w2 = quat[3] * quat[3];
+	var x2 = quat[0] * quat[0];
+	var y2 = quat[1] * quat[1];
+	var z2 = quat[2] * quat[2];
+	var unitLength = w2 + x2 + y2 + z2;    // Normalised == 1, otherwise correction divisor.
+	var abcd = quat[3] * quat[0] + quat[1] * quat[2];
+	var eps = 1e-7;    // TODO: pick from your math lib instead of hardcoding.
+	var pi = Math.PI;
+	var yaw, pitch, roll;
+	if (abcd > (0.5-eps) * unitLength){
+		yaw = 2 * Math.atan2(quat[1], quat[3]);
+		pitch = pi;
+		roll = 0;
+	} else if (abcd < (-0.5 + eps) * unitLength) {
+		yaw = -2 * Math.atan2(quat[1], quat[3]);
+		pitch = -pi;
+		roll = 0;
+	} else {
+		var adbc = quat[3] * quat[2] - quat[0]*quat[1];
+		var acbd = quat[3] * quat[1] - quat[0]*quat[2];
+		yaw = Math.atan2(2 * adbc, 1 - 2 * (z2 + x2));
+		pitch = Math.asin(2 * abcd / unitLength);
+		roll = Math.atan2(2 * acbd, 1 - 2 * (y2 + x2));
+	}
+	var deg = 180 / Math.PI;
+	return [pitch * deg, roll * deg, yaw * deg]
+}

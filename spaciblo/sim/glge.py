@@ -142,10 +142,10 @@ class Placeable(SceneBase):
 		self.dLocX = 0
 		self.dLocY = 0
 		self.dLocZ = 0
-		self.quatW = 1
 		self.quatX = 0
 		self.quatY = 0
 		self.quatZ = 0
+		self.quatW = 1
 		self.rotX = 0
 		self.rotY = 0
 		self.rotZ = 0
