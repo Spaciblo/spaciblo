@@ -185,6 +185,7 @@ SpacibloRenderer.Renderable.prototype.setGeometry = function(nodeJson, templateI
 					texture.id = nodeJson.material.texture.key;
 					texture.setSrc('/api/sim/template/' + templateID + '/asset/' + nodeJson.material.texture.key)
 					material.addTexture(texture);
+					console.log("Setting texture", nodeJson.material.texture, material);
 					var layer = new GLGE.MaterialLayer();
 					layer.setTexture(material.textures[0]);
 					material.addMaterialLayer(layer);
@@ -237,6 +238,18 @@ SpacibloRenderer.Canvas = function(_canvas_id){
 	self.glgeRenderer = null;
 	self.scene = null;
 
+	self.createPointLight = function(x, y, z){
+		var light = new GLGE.Light(GLGE.Assets.createUUID());
+		light.setLocX(x);
+		light.setLocY(y)
+		light.setLocZ(z);
+		light.setAttenuationQuadratic(0.00001);
+		light.setAttenuationLinear(0.00000001);
+		light.setAttenuationConstant(1);
+		light.setType(GLGE.L_POINT);
+		return light;
+	},
+
 	self.initialize = function(sceneJson, username) {
 		self.username = username;
 		self.canvas = document.getElementById(self.canvas_id);		
@@ -244,20 +257,15 @@ SpacibloRenderer.Canvas = function(_canvas_id){
 
 		self.glgeRenderer = new GLGE.Renderer(self.canvas);
 
-		var light1 = new GLGE.Light(GLGE.Assets.createUUID());
-		light1.setLocX(-3);
-		light1.setLocY(15)
-		light1.setLocZ(7);
-		light1.setAttenuationQuadratic(0.00001);
-		light1.setAttenuationLinear(0.00000001);
-		light1.setAttenuationConstant(1);
-		light1.setType(GLGE.L_POINT);
+		var light1 = self.createPointLight(-3, 15, 7);
+		var light2 = self.createPointLight(3, 20, -40);
 
 		self.scene = new GLGE.Scene();
 		self.scene.obj_name = "I am the scene";
 		self.scene.setAmbientColor("#555");
 		self.scene.setBackgroundColor("#55F");
 		self.scene.addLight(light1);
+		self.scene.addLight(light2);
 		self.scene.camera.setLoc(Spaciblo.defaultPosition[0], Spaciblo.defaultPosition[1], Spaciblo.defaultPosition[2]);
 		self.scene.camera.setQuat(Spaciblo.defaultRotation[0], Spaciblo.defaultRotation[1], Spaciblo.defaultRotation[2], Spaciblo.defaultRotation[3]);
 		for(var i=0; i < sceneJson.children.length; i++){

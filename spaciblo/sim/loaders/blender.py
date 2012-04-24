@@ -18,6 +18,17 @@ def flatten_faces(faces):
 			print("Cannot triangulate faces with length %s" % len(face))
 	return result
 
+def flatten_uv(uvs, faces, num_positions):
+	"""When passed Returns a 1D array of uv coordinates."""
+	two_d_results = [[0.0,0.0] for i in range(num_positions)]
+	for i, uv_map in enumerate(uvs):
+		for j, uv in enumerate(uv_map):
+			two_d_results[faces[i][j]] = uv
+
+	results = []
+	for uv in two_d_results: results.extend(uv)
+	return results
+
 class JSONLoader:
 	"""Loads the JSON data created by the Blender 2.5 spaciblo addon."""
 	def toGeometry(self, json_string):
@@ -39,6 +50,10 @@ class JSONLoader:
 			obj.mesh.positions = obj_data['data']['vertices']
 			obj.mesh.normals = obj_data['data']['normals']
 			obj.mesh.faces = flatten_faces(obj_data['data']['faces'])
+			if obj_data['data'].has_key('uv_map') and len(obj_data['data']['uv_map']) > 0:
+				obj.mesh.UV = flatten_uv(obj_data['data']['uv_map'], obj_data['data']['faces'], len(obj.mesh.positions))
+			elif obj_data['data'].has_key('uv_tex') and len(obj_data['data']['uv_tex']) > 0:
+				obj.mesh.UV = flatten_uv(obj_data['data']['uv_tex'], obj_data['data']['faces'], len(obj.mesh.positions))
 			if len(obj_data['data']['materials']) > 0:
 				obj.material = self.toMaterial(obj_data['data']['materials'][0])
 			else:
@@ -55,8 +70,13 @@ class JSONLoader:
 		if matJson.has_key('active_texture'):
 			material.texture = Texture()
 			material.texture.name = matJson['active_texture']['name']
-			#material.texture.key = matJson['active_texture']['image']
+			if matJson.has_key('image'):
+				material.texture.key = clean_image_key(matJson['image'])
 		return material
+
+def clean_image_key(key):
+	if key.endswith('.001'): return key[0:-4]
+	return key
 
 def make_positive_degree(deg):
 	if deg >= 0: return deg
