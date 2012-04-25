@@ -64,6 +64,7 @@ class SpaceDirLoader():
 		things_reader = csv.reader(open(things_path))
 		scene = Scene()
 		for thing_row in things_reader:
+			if len(thing_row) == 0: continue
 			template_name = thing_row[0]
 			if Template.objects.filter(name=template_name).count() != 1:
 				print 'things.csv references an unknown template: %s' % template_name
@@ -114,8 +115,8 @@ class TemplateDirLoader():
 		for asset_path in asset_files:
 			if not os.path.isfile(asset_path): continue
 			asset_name = os.path.basename(asset_path)
-			file_type = self.asset_type(asset_name)
 			if asset_name == TEMPLATE_PROPERTIES_FILE_NAME: continue
+			file_type = self.asset_type(asset_name)
 			if file_type == None: continue
 			asset_file = file(asset_path, 'r')
 			asset = template.get_asset(key=asset_name)
@@ -154,7 +155,7 @@ class TemplateDirLoader():
 			return 'texture'
 		elif filename.endswith('.txt'):
 			return 'text'
-		elif filename.endswith('.obj') or filename.endswith('.mtl') or filename.endswith('.json'):
+		elif filename.endswith('.json'):
 			return 'geometry'
 		else:
 			return None

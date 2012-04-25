@@ -185,7 +185,6 @@ SpacibloRenderer.Renderable.prototype.setGeometry = function(nodeJson, templateI
 					texture.id = nodeJson.material.texture.key;
 					texture.setSrc('/api/sim/template/' + templateID + '/asset/' + nodeJson.material.texture.key)
 					material.addTexture(texture);
-					console.log("Setting texture", nodeJson.material.texture, material);
 					var layer = new GLGE.MaterialLayer();
 					layer.setTexture(material.textures[0]);
 					material.addMaterialLayer(layer);
