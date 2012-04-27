@@ -29,8 +29,55 @@ def flatten_uv(uvs, faces, num_positions):
 	for uv in two_d_results: results.extend(uv)
 	return results
 
+def flatten(obj_data):
+	positions = obj_data['data']['vertices']
+	normals = obj_data['data']['normals']
+	faces = obj_data['data']['faces']
+	if 'uv_map'in obj_data['data'] and len(obj_data['data']['uv_map']) > 0:
+		uvs = obj_data['data']['uv_map']
+	elif 'uv_tex' in obj_data['data'] and len(obj_data['data']['uv_tex']) > 0:
+		uvs = obj_data['data']['uv_tex']
+	else:
+		uvs = []
+
+	use_normals = len(normals) == len(positions)
+	use_uvs = len(uvs) == len(faces)
+
+	decorated_faces = []
+	for i, face in enumerate(faces):
+		decorated_positions = []
+		for j, face_index in enumerate(face):
+			pos_index = face_index * 3
+			decorated_position = {'position':[positions[pos_index], positions[pos_index + 1], positions[pos_index + 2]]}
+			if use_normals:
+				normal_index = face_index * 2
+				decorated_position['normal'] = [normals[normal_index], normals[normal_index + 1], normals[normal_index + 2]]
+			if use_uvs:
+				decorated_position['uv'] = uvs[i][j]
+			decorated_positions.append(decorated_position)
+		if len(decorated_positions) == 3:
+			decorated_faces.append(decorated_positions)
+		elif len(decorated_positions) == 4:
+			# convert a quad into two triangles
+			decorated_faces.append([decorated_positions[0], decorated_positions[1], decorated_positions[2]])
+			decorated_faces.append([decorated_positions[2], decorated_positions[3], decorated_positions[0]])
+		else:
+			print('Unhandled face of length %s' % len(decorated_positions))
+
+	positions = []
+	normals = []
+	uvs = []
+	for decorated_face in decorated_faces:
+		for decorated_position in decorated_face:
+			positions.extend(decorated_position['position'])
+			if use_normals: normals.extend(decorated_position['normal'])
+			if use_uvs: uvs.extend(decorated_position['uv'])
+	triangles = range(len(positions))
+	return (positions, normals, triangles, uvs)
+
+
 class JSONLoader:
-	"""Loads the JSON data created by the Blender 2.5 spaciblo addon."""
+	"""Loads the JSON data created by the Blender spaciblo addon."""
 	def toGeometry(self, json_string):
 		json_data = simplejson.loads(json_string)
 		root_group = Group()
@@ -47,13 +94,11 @@ class JSONLoader:
 			else:
 				obj.set_quat(obj_data['rotation_quaternion'])
 			obj.mesh = Mesh()
-			obj.mesh.positions = obj_data['data']['vertices']
-			obj.mesh.normals = obj_data['data']['normals']
-			obj.mesh.faces = flatten_faces(obj_data['data']['faces'])
-			if obj_data['data'].has_key('uv_map') and len(obj_data['data']['uv_map']) > 0:
-				obj.mesh.UV = flatten_uv(obj_data['data']['uv_map'], obj_data['data']['faces'], len(obj.mesh.positions))
-			elif obj_data['data'].has_key('uv_tex') and len(obj_data['data']['uv_tex']) > 0:
-				obj.mesh.UV = flatten_uv(obj_data['data']['uv_tex'], obj_data['data']['faces'], len(obj.mesh.positions))
+			obj.mesh.positions, obj.mesh.normals, obj.mesh.faces, obj.mesh.UV = flatten(obj_data)
+			#obj.mesh.positions = obj_data['data']['vertices']
+			#obj.mesh.faces = flatten_faces(obj_data['data']['faces'])
+			print len(obj.mesh.positions), obj.mesh.positions
+			print len(obj.mesh.faces), obj.mesh.faces
 			if len(obj_data['data']['materials']) > 0:
 				obj.material = self.toMaterial(obj_data['data']['materials'][0])
 			else:

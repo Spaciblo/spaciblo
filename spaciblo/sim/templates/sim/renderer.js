@@ -199,6 +199,7 @@ SpacibloRenderer.Renderable.prototype.setGeometry = function(nodeJson, templateI
 
 		var mesh = new GLGE.Mesh(nodeJson.mesh.uid);
 		mesh.name = nodeJson.mesh.name;
+		console.log(nodeJson.mesh);
 		mesh.setPositions(nodeJson.mesh.positions);
 		mesh.setFaces(nodeJson.mesh.faces);
 		if(nodeJson.mesh.normals && nodeJson.mesh.normals.length > 0) mesh.setNormals(nodeJson.mesh.normals);
