@@ -50,7 +50,7 @@ def flatten(obj_data):
 			pos_index = face_index * 3
 			decorated_position = {'position':[positions[pos_index], positions[pos_index + 1], positions[pos_index + 2]]}
 			if use_normals:
-				normal_index = face_index * 2
+				normal_index = face_index * 3
 				decorated_position['normal'] = [normals[normal_index], normals[normal_index + 1], normals[normal_index + 2]]
 			if use_uvs:
 				decorated_position['uv'] = uvs[i][j]
@@ -72,7 +72,7 @@ def flatten(obj_data):
 			positions.extend(decorated_position['position'])
 			if use_normals: normals.extend(decorated_position['normal'])
 			if use_uvs: uvs.extend(decorated_position['uv'])
-	triangles = range(len(positions))
+	triangles = range(len(positions) / 3)
 	return (positions, normals, triangles, uvs)
 
 
@@ -97,8 +97,6 @@ class JSONLoader:
 			obj.mesh.positions, obj.mesh.normals, obj.mesh.faces, obj.mesh.UV = flatten(obj_data)
 			#obj.mesh.positions = obj_data['data']['vertices']
 			#obj.mesh.faces = flatten_faces(obj_data['data']['faces'])
-			print len(obj.mesh.positions), obj.mesh.positions
-			print len(obj.mesh.faces), obj.mesh.faces
 			if len(obj_data['data']['materials']) > 0:
 				obj.material = self.toMaterial(obj_data['data']['materials'][0])
 			else:
