@@ -199,7 +199,6 @@ SpacibloRenderer.Renderable.prototype.setGeometry = function(nodeJson, templateI
 
 		var mesh = new GLGE.Mesh(nodeJson.mesh.uid);
 		mesh.name = nodeJson.mesh.name;
-		console.log(nodeJson.mesh);
 		mesh.setPositions(nodeJson.mesh.positions);
 		mesh.setFaces(nodeJson.mesh.faces);
 		if(nodeJson.mesh.normals && nodeJson.mesh.normals.length > 0) mesh.setNormals(nodeJson.mesh.normals);
@@ -240,13 +239,25 @@ SpacibloRenderer.Canvas = function(_canvas_id){
 
 	self.createPointLight = function(x, y, z){
 		var light = new GLGE.Light(GLGE.Assets.createUUID());
+		light.setType(GLGE.L_POINT);
+		light.setDistance(10000);
+		light.specular = true;
 		light.setLocX(x);
 		light.setLocY(y)
 		light.setLocZ(z);
-		light.setAttenuationQuadratic(0.00001);
-		light.setAttenuationLinear(0.00000001);
-		light.setAttenuationConstant(1);
-		light.setType(GLGE.L_POINT);
+		return light;
+	},
+
+	self.createDirectionalLight = function(x, y, z, rot){
+		var light = new GLGE.Light(GLGE.Assets.createUUID());
+		light.setType(GLGE.L_DIR);
+		light.setDistance(10000);
+		light.setAttenuation(1, 0.00001, 0.1);
+		light.specular = false;
+		light.setLocX(x);
+		light.setLocY(y)
+		light.setLocZ(z);
+		light.setRot(rot[0], rot[1], rot[2]);
 		return light;
 	},
 
@@ -257,15 +268,20 @@ SpacibloRenderer.Canvas = function(_canvas_id){
 
 		self.glgeRenderer = new GLGE.Renderer(self.canvas);
 
-		var light1 = self.createPointLight(-3, 15, 7);
-		var light2 = self.createPointLight(3, 20, -40);
 
 		self.scene = new GLGE.Scene();
 		self.scene.obj_name = "I am the scene";
 		self.scene.setAmbientColor("#555");
 		self.scene.setBackgroundColor("#55F");
-		self.scene.addLight(light1);
-		self.scene.addLight(light2);
+
+		self.scene.addLight(self.createPointLight(-3, 30, 25));
+		self.scene.addLight(self.createPointLight(10, 30, -25));
+
+		self.scene.addLight(self.createDirectionalLight(0, 0, 0, [-1.3,0,0]));
+		self.scene.addLight(self.createDirectionalLight(0, 0, 0, [1.3,0,0]));
+		//self.scene.addLight(self.createDirectionalLight(0, 0, 0, [-1.57,0,0.5]));
+		//self.scene.addLight(self.createDirectionalLight(0, 0, 0, [-1.57,0,-0.5]));
+
 		self.scene.camera.setLoc(Spaciblo.defaultPosition[0], Spaciblo.defaultPosition[1], Spaciblo.defaultPosition[2]);
 		self.scene.camera.setQuat(Spaciblo.defaultRotation[0], Spaciblo.defaultRotation[1], Spaciblo.defaultRotation[2], Spaciblo.defaultRotation[3]);
 		for(var i=0; i < sceneJson.children.length; i++){

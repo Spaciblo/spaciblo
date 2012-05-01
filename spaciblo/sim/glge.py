@@ -79,6 +79,12 @@ P_QUAT=2;
 # Enumeration for matrix rotation mode
 P_MATRIX=3;
 
+# Different types of lights
+L_POINT=1;
+L_DIR=2;
+L_SPOT=3;
+L_OFF=4;
+
 def copy_attributes(target, data, ignore=None):
 	if not data: return
 	if not ignore: ignore = []
