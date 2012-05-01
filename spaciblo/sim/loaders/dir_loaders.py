@@ -37,6 +37,7 @@ DEFAULT_BODY_OPTION = "default-body"
 class SpaceDirLoader():
 	def load(self, space_dir_path, owner):
 		space_name = os.path.basename(space_dir_path)
+		print 'Space name', space_name
 		things_path = os.path.join(space_dir_path, SPACE_TEMPLATE_FILE_NAME)
 		if not os.path.isfile(things_path):
 			print 'No things.csv in space %s, ignoring' % space_name
