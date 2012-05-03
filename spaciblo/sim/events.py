@@ -17,6 +17,7 @@ class SpaceChannel(Channel):
 		from models import Space
 		super(SpaceChannel, self).__init__(server, channel_id, name, options)
 		self.space = Space.objects.get(pk=SpaceChannel.parse_channel_id(channel_id))
+		self.sim_connection = None
 
 	def handle_subscribe_request(self, connection, event):
 		import spaciblo.sim
@@ -33,13 +34,30 @@ class SpaceChannel(Channel):
 		if len(tokens) != 2 or tokens[0] != 'space': raise Exception('Bad channel_id %s %s' % (channel_id, tokens))
 		return int(tokens[1])
 
+class RegisterSimulator(Event):
+	"""Note that this connection is the one to the simulator"""
+	def service(self, connection):
+		if connection.user == None:
+			print 'Register sim not authed %s' % connection.user
+			return
+		if connection.channel == None:
+			print 'Cannot register a sim without a channel %s' % connection.user
+			return
+		if not connection.user.is_staff:
+			print 'Tried to register as sim without a staff account'
+			return
+		if connection.channel.sim_connection != None:
+			print 'Already have a sim connection for this channel'
+			return
+		connection.channel.sim_connection = connection
+
 class AddUserRequest(Event):
 	"""Request a body in a space."""
-	def __init__(self, position=None, orientation=None):
-		if not position: position = [0,0,0]
-		if not orientation: orientation = [0,0,0,1]
-		self.position = position
-		self.orientation = orientation
+	def __init__(self, location=None, quat=None):
+		if not location: location = [0,0,0]
+		if not quat: quat = [0,0,0,1]
+		self.location = location
+		self.quat = quat
 
 	def service(self, connection):
 		import spaciblo.sim
@@ -55,11 +73,12 @@ class AddUserRequest(Event):
 			print 'User (%s) cannot join a spaceless channel %s' % (connection.user, connection.space)
 			connection.send_event(AddUserResponse(joined=False))
 			return
+
 		allow_join, space_member = spaciblo.sim.models.Space.objects.get_membership(connection.channel.space, connection.user)
 		response_event = AddUserResponse(allow_join)
 		if allow_join:
-			response_event.position = self.position
-			response_event.orientation = self.orientation
+			response_event.location = self.location
+			response_event.quat = self.quat
 			response_event.scene_doc = to_json(spaciblo.sim.DEFAULT_SIM_SERVER.sim_pool.get_simulator(connection.channel.space.id).scene)
 		if space_member:
 			response_event.is_member = True
@@ -67,24 +86,24 @@ class AddUserRequest(Event):
 			response_event.is_editor = space_member.is_editor
 		#print 'Sending response %s' % response_event.to_json()
 		connection.send_event(response_event)
-		if allow_join: connection.channel.send_event(UserAdded(connection.user.username, self.position, self.orientation))
+		if allow_join: connection.channel.send_event(UserAdded(connection.user.username, self.location, self.quat))
 
 class AddUserResponse(Event):
 	"""Indicate whether an AddUserRequest is successful and what role the client may play (e.g. member, editor, ...)."""
-	def __init__(self, joined=False, position=None, orientation=None, is_member=False, is_editor=False, is_admin=False, scene_doc=None):
+	def __init__(self, joined=False, location=None, quat=None, is_member=False, is_editor=False, is_admin=False, scene_doc=None):
 		self.joined = joined
-		self.position = position
-		self.orientation = orientation
+		self.location = location
+		self.quat = quat
 		self.is_member = is_member
 		self.is_editor = is_editor
 		self.is_admin = is_admin
 		self.scene_doc = scene_doc
 
 class UserAdded(Event):
-	def __init__(self, username=None, position=None, orientation=None):
+	def __init__(self, username=None, location=None, quat=None):
 		self.username = username
-		self.position = position
-		self.orientation = orientation
+		self.location = location
+		self.quat = quat
 
 class UserExited(Event):
 	def __init__(self, username=None):
@@ -92,21 +111,33 @@ class UserExited(Event):
 
 class UserMoveRequest(ForwardingEvent):
 	"""A space client sends this to indicate that the user has requested a motion."""
-	def __init__(self, username=None, position=None, orientation=None):
-		if not position: position = [0,0,0]
-		if not orientation: orientation = [0,0,0,1]
+	def __init__(self, username=None, location=None, quat=None):
+		if not location: location = [0,0,0]
+		if not quat: quat = [0,0,0,1]
 		self.username = username
-		self.position = position
-		self.orientation = orientation
+		self.location = location
+		self.quat = quat
+
+class MovePlaceable(Event):
+	"""A client sends this to request that a Placeable move"""
+	def __init__(self, uid=None, location=None, quat=None):
+		if not location: location = [0,0,0]
+		if not quat: quat = [0,0,0,1]
+		self.uid = uid;
+		self.location = location
+		self.quat = quat	
+
+	def service(self, connection):
+		connection.channel.sim_connection.send_event(self)
 
 class PlaceableMoved(ForwardingEvent):
 	"""The simulator generates these to indicate that a Placeable is in motion."""
-	def __init__(self, uid=None, position=None, orientation=None):
-		if not position: position = [0,0,0]
-		if not orientation: orientation = [0,0,0,1]
+	def __init__(self, uid=None, location=None, quat=None):
+		if not location: location = [0,0,0]
+		if not quat: quat = [0,0,0,1]
 		self.uid = uid;
-		self.position = position
-		self.orientation = orientation
+		self.location = location
+		self.quat = quat
 
 class NodeRemoved(ForwardingEvent):
 	"""The simulator generates these to indicate that a Node has been destroyed."""

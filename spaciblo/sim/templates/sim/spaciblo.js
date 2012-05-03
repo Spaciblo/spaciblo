@@ -101,8 +101,8 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 				var node = self.scene.getNode(spaciblo_event.uid);
 				if(node){
 					if(node.username != self.username){
-						node.setLoc(spaciblo_event.position[0], spaciblo_event.position[1], spaciblo_event.position[2]);
-						node.setQuat(spaciblo_event.orientation[0], spaciblo_event.orientation[1], spaciblo_event.orientation[2], spaciblo_event.orientation[3]);
+						node.setLocVec(spaciblo_event.location);
+						node.setQuatVec(spaciblo_event.quat);
 					}
 				} else {
 					console.log("Tried to move an unknown node: " + spaciblo_event.uid);
@@ -159,13 +159,17 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 		self.sendEvent(new Wind.Events.SubscribeRequest('space_' + self.space_id));
 	}
 	
-	self.addUser = function(position, orientation) {
+	self.addUser = function(location, quat) {
 		//if(self.scene.getUserGroup(self.username) != null) return;
-		self.sendEvent(new Wind.Events.AddUserRequest(position, orientation));
+		self.sendEvent(new Wind.Events.AddUserRequest(quat, location));
 	}
 	
 	self.sendUserMessage = function(message){
 		self.sendEvent(new Wind.Events.UserMessage(self.username, message));
+	}
+
+	self.movePlaceable = function(placeable, location, quat){
+		self.sendEvent(new Wind.Events.MovePlaceable(quat, placeable.uid, location))
 	}
 	
 	self.close = function() {

@@ -8,12 +8,12 @@ from time import sleep
 from django.conf import settings
 
 from blank_slate.wind.client import Client
-from blank_slate.wind.events import Heartbeat, CreateChannelRequest, SubscribeRequest, SubscribeResponse
 from blank_slate.wind.handler import to_json, from_json
+from blank_slate.wind.events import Heartbeat, CreateChannelRequest, SubscribeRequest, SubscribeResponse
 
-from spaciblo.sim.events import SpaceChannel, NodeAdded, NodeRemoved, PlaceableMoved
 from spaciblo.sim.models import Space
 from spaciblo.sim.glge import Scene, Object, Group, GroupTemplate
+from spaciblo.sim.events import SpaceChannel, NodeAdded, NodeRemoved, PlaceableMoved, RegisterSimulator
 
 DEFAULT_SIM_POOL = None
 
@@ -43,8 +43,7 @@ class Simulator:
 	def channel_id(self): return SpaceChannel.generate_channel_id(self.space.id)
 
 	def handle_event(self, event):
-		if event:
-			self.event_queue.put(event)
+		if event: self.event_queue.put(event)
 
 	def __unicode__(self): return "Simulator for %s" % self.space
 
@@ -79,8 +78,8 @@ class Simulator:
 				if user_node == None:
 					user_node = Group()
 					user_node.username = event.username
-					user_node.set_loc(event.position)
-					user_node.set_quat(event.orientation)
+					user_node.set_loc(event.location)
+					user_node.set_quat(event.quat)
 					user_node.group_template = GroupTemplate(template_id=self.space.default_body.id, name=self.space.default_body.name)
 					self.scene.children.append(user_node)
 				self.client.send_event(NodeAdded(self.scene.uid, to_json(user_node)))
@@ -100,13 +99,20 @@ class Simulator:
 				if user_node == None:
 					print "No such user node: %s" % event.username
 				else:
-					user_node.set_loc(event.position)
-					user_node.set_quat(event.orientation)
+					user_node.set_loc(event.location)
+					user_node.set_quat(event.quat)
 					response = PlaceableMoved(user_node.uid, user_node.loc, user_node.quat)
 					self.client.send_event(response)
 
 			elif event.event_name() == 'TemplateUpdated':
 				pass
+
+			elif event.event_name() == 'MovePlaceable':
+				node = self.scene.get_node(event.uid)
+				if node:
+					node.set_loc(event.location)
+					node.set_quat(event.quat)
+					self.client.send_event(PlaceableMoved(node.uid, node.loc, node.quat))
 
 			elif event.event_name() == 'PlaceableMoved':
 				pass
@@ -121,7 +127,7 @@ class Simulator:
 				pass
 
 			elif event.event_name() == 'SubscribeResponse':
-				pass
+				self.client.send_event(RegisterSimulator())
 
 			else:
 				print "Unknown event in simulator: %s" % event.event_name()

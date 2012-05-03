@@ -85,7 +85,7 @@ SpacibloInput.InputManager = function(_space_client){
 				return;
 		}
 
-		var event = new Wind.Events.UserMoveRequest(self.space_client.username, [userNode.locX, userNode.locY, userNode.locZ], [userNode.quatX, userNode.quatY, userNode.quatZ, userNode.quatW]);
+		var event = new Wind.Events.UserMoveRequest(self.space_client.username, [userNode.quatX, userNode.quatY, userNode.quatZ, userNode.quatW], [userNode.locX, userNode.locY, userNode.locZ]);
 		self.space_client.sendEvent(event);
 	}
 
@@ -99,7 +99,7 @@ SpacibloInput.InputManager = function(_space_client){
 		self.space_client.scene.camera.setQuat(Spaciblo.defaultRotation[0], Spaciblo.defaultRotation[1], Spaciblo.defaultRotation[2], Spaciblo.defaultRotation[3]);
 		userNode.setLoc(Spaciblo.defaultPosition[0], Spaciblo.defaultPosition[1], Spaciblo.defaultPosition[2]);
 		userNode.setQuat(Spaciblo.defaultRotation[0], Spaciblo.defaultRotation[1], Spaciblo.defaultRotation[2], Spaciblo.defaultRotation[3]);
-		var event = new Wind.Events.UserMoveRequest(self.space_client.username, [userNode.locX, userNode.locY, userNode.locZ], [userNode.quatX, userNode.quatY, userNode.quatZ, userNode.quatW]);
+		var event = new Wind.Events.UserMoveRequest(self.space_client.username, [userNode.quatX, userNode.quatY, userNode.quatZ, userNode.quatW], [userNode.locX, userNode.locY, userNode.locZ]);
 		self.space_client.sendEvent(event);
 	}
 	

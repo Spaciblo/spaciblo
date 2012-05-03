@@ -40,6 +40,9 @@ GLGE.Group.prototype.getNodesByTemplate = function(template_id, results){
 }
 GLGE.Scene.prototype.getNodesByTemplate = GLGE.Group.prototype.getNodesByTemplate;
 
+GLGE.Placeable.prototype.setLocVec=function(loc){
+	this.setLoc(loc[0], loc[1], loc[2], loc[3]);
+};
 GLGE.Placeable.prototype.setQuatVec=function(q){
 	var qc = Spaciblo.Quaternion.normalize(q);
 	this.setQuat(qc[0], qc[1], qc[2], qc[3]);

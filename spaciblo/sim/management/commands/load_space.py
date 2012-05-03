@@ -14,15 +14,12 @@ from django.core.management.base import BaseCommand, CommandError
 class Command(BaseCommand):
 	help = "Loads a space from a directory."
 	requires_model_validation = True
-	option_list = BaseCommand.option_list + (
-		make_option('--delete', action='store_true', dest='delete', default=False, help='Delete poll instead of closing it'),
-	)
 
 	def handle(self, *args, **options):
 		from django.contrib.auth.models import User
 		from spaciblo.sim.loaders.dir_loaders import TemplateDirLoader, SpaceDirLoader
 		from spaciblo.sim.management import SPACE_DIR_PATH
-		
+
 		if len(User.objects.filter(is_staff=True)) == 0:
 			print 'There must be at least one staff user before we can load templates.'
 			return

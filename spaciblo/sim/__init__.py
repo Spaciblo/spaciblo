@@ -13,3 +13,8 @@ class UserHandler(BaseHandler):
 	allowed_methods = ('GET',)
 
 DEFAULT_SIM_SERVER = None
+
+def get_simulator(space_id):
+	"""Return the simulator for space_id from the default sim server's pool"""
+	if not DEFAULT_SIM_SERVER: raise Exception('No known sim server')
+	DEFAULT_SIM_SERVER.sim_pool.get_simulator(space_id)
