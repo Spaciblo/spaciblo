@@ -24,6 +24,18 @@ class SpaceChannel(Channel):
 		allow_join, space_member = spaciblo.sim.models.Space.objects.get_membership(self.space, connection.user)
 		return (allow_join, SubscribeResponse(channel_id=self.channel_id, joined=allow_join))
 
+	def handle_disconnect(self, connection):
+		if not connection.user: return
+		if not self.sim_connection: return
+		all_connections = self.server.get_client_connections(self.channel_id)
+		for con in all_connections:
+			if con == self.sim_connection: continue
+			if con.user == connection.user:
+				# Do not send the user existed event because another connection is owned by that user
+				# This happens sometimes when the user hits reload and their browser makes a new connection before closing the old one
+				return
+		self.sim_connection.send_event(UserExited(username=connection.user.username))
+
 	@classmethod
 	def generate_channel_id(cls, space_id): return 'space_%s' % space_id
 

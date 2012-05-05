@@ -75,24 +75,28 @@ class Simulator:
 			
 			if event.event_name() == 'UserAdded':
 				user_node = self.scene.get_user(event.username)
-				if user_node == None:
+				if user_node != None:
+					print 'Added an existing user:', user_node, event.username
+				else:
 					user_node = Group()
 					user_node.username = event.username
 					user_node.set_loc(event.location)
 					user_node.set_quat(event.quat)
 					user_node.group_template = GroupTemplate(template_id=self.space.default_body.id, name=self.space.default_body.name)
 					self.scene.children.append(user_node)
-				self.client.send_event(NodeAdded(self.scene.uid, to_json(user_node)))
-
-			elif event.event_name() == 'NodeAdded':
-				pass
+					self.client.send_event(NodeAdded(self.scene.uid, to_json(user_node)))
 
 			elif event.event_name() == 'UserExited':
-				#print 'User exited', event.username
 				user_node = self.scene.get_user(event.username)
-				if user_node:
+				if not user_node:
+					print 'Used exited without a node', event.username
+				else:
 					self.scene.remove_node(user_node.uid)
 					self.client.send_event(NodeRemoved(user_node.uid))
+
+			elif event.event_name() == 'NodeAdded' or event.event_name() == 'NodeRemoved':
+				# The sim sends these out but doesn't accept them
+				pass
 
 			elif event.event_name() == 'UserMoveRequest':
 				user_node = self.scene.get_user(event.username)

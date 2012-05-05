@@ -82,7 +82,7 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 			case 'NodeAdded':
 				var nodeJson = JSON.parse(spaciblo_event.json_data);
 				if(self.scene.getNode(nodeJson.uid)){
-					console.log("Tried to add a duplicate node:", nodeJson.uid, nodeJson);
+					console.log("Tried to add a duplicate node:", nodeJson.uid);
 					break;
 				}
 				var renderable = new SpacibloRenderer.Renderable(self, nodeJson.uid);
@@ -96,6 +96,14 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 				}
 				self.scene.addChild(renderable);
 				self.canvas.requestTemplates(renderable);
+				break;
+			case 'NodeRemoved':
+				var node = self.scene.getNode(spaciblo_event.uid);
+				if(node == null){
+					console.log("Tried to remove unknown node.", spaciblo_event, spaciblo_event.uid);
+					break;
+				}
+				self.scene.removeChild(node);
 				break;
 			case 'PlaceableMoved':
 				var node = self.scene.getNode(spaciblo_event.uid);
