@@ -94,7 +94,9 @@ def copy_attributes(target, data, ignore=None):
 
 def populate_children(target, data):
 	for child_data in data['children']:
-		if 'children' in child_data:
+		if 'softness' in child_data:
+			child = Light().populate(child_data)
+		elif 'children' in child_data:
 			child = Group().populate(child_data)
 		else:
 			child = Object().populate(child_data)
@@ -539,9 +541,9 @@ class ObjectInstance(Placeable, Animatable):
 class Scene(Group):
 	def __init__(self):
 		Group.__init__(self)
-		self.backgroundColor = [1,1,1]
+		self.backgroundColor = [0.3,0.3,1.0,1.0]
 		self.fogColor = [0.5,0.5,0.5]
-		self.ambientColor = [0,0,0]
+		self.ambientColor = [0.3,0.3,0.3]
 		self.fogNear = 10
 		self.fogFar = 80
 		self.fogType = FOG_NONE

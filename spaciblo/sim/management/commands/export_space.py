@@ -13,6 +13,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from blank_slate.wind.handler import to_json
 from spaciblo.sim.sim_client import SimClient
+from spaciblo.sim.glge import Light, L_SPOT, L_DIR, L_POINT, L_OFF
 
 class Command(BaseCommand):
 	help = "Writes the info from a space to a directory."
@@ -30,7 +31,7 @@ class Command(BaseCommand):
 		admin_user = User.objects.filter(is_staff=True).order_by('id')[0]
 
 		if len(args) != 2:
-			print 'Usage: ./manage.py export_space <space id> <path to things.csv>'
+			print 'Usage: ./manage.py export_space <space id> <path to space directory>'
 			return
 		space_id = int(args[0])
 		if Space.objects.filter(pk=space_id).count() == 0:
@@ -38,12 +39,10 @@ class Command(BaseCommand):
 			return
 		space = Space.objects.get(pk=space_id)
 
-		full_path = os.path.abspath(args[1])
-		space_dir_path, things_file_name = os.path.split(full_path)
+		space_dir_path = os.path.abspath(args[1])
 		if not os.path.isdir(space_dir_path):
 			print 'Could not find directory', space_dir_path
 			return
-		things_file = open(full_path, mode='w')
 
 		if SimulatorPoolRegistration.objects.all().count() == 0:
 			print 'No simulators are running'
@@ -73,8 +72,13 @@ class Command(BaseCommand):
 				print 'Could not add a user: %s' % space_id
 				return
 
+			things_file = open(os.path.join(space_dir_path, 'things.csv'), mode='w')
 			things_csv = generate_things_csv(sim_client.scene)
 			things_file.write(things_csv)
+
+			lights_file = open(os.path.join(space_dir_path, 'lights.csv'), mode='w')
+			lights_csv = generate_lights_csv(sim_client.scene)
+			lights_file.write(lights_csv)
 		finally:
 			sim_client.close()
 
@@ -85,9 +89,29 @@ class Command(BaseCommand):
 			if data.has_key('_auth_user_id') and data['_auth_user_id'] == user.id: return session.session_key
 		return None
 
+def generate_lights_csv(scene):
+	lights = []
+	for child in scene.children:
+		if child.__class__ != Light: continue
+		if child.type == L_POINT:
+			type_name = 'point'
+		elif child.type == L_DIR:
+			type_name = 'directional'
+		elif child.type == L_SPOT:
+			type_name = 'spot'
+		elif child.type == L_OFF:
+			type_name = 'off'
+		else:
+			print 'Unknown light type:', child.type
+
+		result = [type_name, child.locX, child.locY, child.locZ, child.quatX, child.quatY, child.quatZ, child.quatW, child.distance, child.specular]
+		lights.append(','.join([str(item) for item in result]))
+	return '\n'.join(lights)
+
 def generate_things_csv(scene):
 	things = []
 	for child in scene.children:
+		if child.__class__ == Light: continue
 		if child.username: continue
 		if not child.group_template: continue
 		result = [child.group_template.name, child.locX, child.locY, child.locZ, child.quatX, child.quatY, child.quatZ, child.quatW, child.scaleX, child.scaleY, child.scaleZ]

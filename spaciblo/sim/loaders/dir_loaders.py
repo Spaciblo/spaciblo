@@ -18,7 +18,7 @@ from blank_slate.wind.handler import to_json
 
 from spaciblo.sim.events import TemplateUpdated
 from spaciblo.sim.models import Space, Template, Asset, TemplateAsset
-from spaciblo.sim.glge import Object, Scene, Group, GroupTemplate
+from spaciblo.sim.glge import Object, Scene, Group, GroupTemplate, Light, L_DIR, L_POINT, L_SPOT
 
 TEMPLATE_PROPERTIES_FILE_NAME = "template.properties"
 TEMPLATE_INFO_SECTION = "Template Info"
@@ -30,9 +30,12 @@ ORIENTATION_OPTION = 'orientation'
 APPLICATION_DIR = 'application-dir'
 
 SPACE_TEMPLATE_FILE_NAME = 'things.csv'
+SPACE_LIGHTS_FILE_NAME = 'lights.csv'
 SPACE_PROPERTIES_FILE_NAME = "space.properties"
 SPACE_INFO_SECTION = "Space Info"
 DEFAULT_BODY_OPTION = "default-body"
+AMBIENT_COLOR_OPTION = "ambient-color"
+BACKGROUND_COLOR_OPTION = "background-color"
 
 class SpaceDirLoader():
 	def load(self, space_dir_path, owner):
@@ -40,6 +43,10 @@ class SpaceDirLoader():
 		things_path = os.path.join(space_dir_path, SPACE_TEMPLATE_FILE_NAME)
 		if not os.path.isfile(things_path):
 			print 'No things.csv in space %s, ignoring' % space_name
+			return None
+		lights_path = os.path.join(space_dir_path, SPACE_LIGHTS_FILE_NAME)
+		if not os.path.isfile(lights_path):
+			print 'No lights.csv in space %s, ignoring' % space_name
 			return None
 		properties_path = os.path.join(space_dir_path, SPACE_PROPERTIES_FILE_NAME)
 		if not os.path.isfile(properties_path):
@@ -52,6 +59,16 @@ class SpaceDirLoader():
 		else:
 			print 'No %s option in %s.  Cannot create the space.' % (DEFAULT_BODY_OPTION, SPACE_PROPERTIES_FILE_NAME)
 			return None
+		if config.has_option(SPACE_INFO_SECTION, AMBIENT_COLOR_OPTION):
+			ambient_color = _parse_property_float_array(config.get(SPACE_INFO_SECTION, AMBIENT_COLOR_OPTION))
+		else:
+			ambient_color = None
+
+		if config.has_option(SPACE_INFO_SECTION, BACKGROUND_COLOR_OPTION):
+			background_color = _parse_property_float_array(config.get(SPACE_INFO_SECTION, BACKGROUND_COLOR_OPTION))
+		else:
+			background_color = None
+
 		if Template.objects.filter(name=body_name).count() != 1:
 			print 'An unknown template is specified for default-body: %s' % body_name
 			return None
@@ -63,6 +80,8 @@ class SpaceDirLoader():
 		
 		things_reader = csv.reader(open(things_path))
 		scene = Scene()
+		if ambient_color: scene.ambientColor = ambient_color
+		if background_color: scene.backgroundColor = background_color
 		for thing_row in things_reader:
 			if len(thing_row) == 0: continue
 			template_name = thing_row[0]
@@ -78,6 +97,26 @@ class SpaceDirLoader():
 			node.set_scale([float(thing_row[8]), float(thing_row[9]), float(thing_row[10])]) 
 			#TODO hook the template data and ID
 			scene.children.append(node)
+
+		lights_reader = csv.reader(open(lights_path))
+		for light_row in lights_reader:
+			if len(light_row) == 0 or light_row[0].startswith('#'): continue
+			light = Light()
+			if light_row[0] == 'point':
+				light.type = L_POINT
+			elif light_row[0] == 'directional':
+				light.type = L_DIR
+			elif light_row[0] == 'spot':
+				light.type = L_SPOT
+			else:
+				print 'Invalid light type:', light_row[0]
+				continue
+			light.set_loc([float(light_row[1]), float(light_row[2]), float(light_row[3])])
+			light.set_quat([float(light_row[4]), float(light_row[5]), float(light_row[6]), float(light_row[7])])
+			light.distance = light_row[8]
+			light.specular = light_row[9] == 'True'
+			scene.children.append(light)
+
 		space.scene_document = to_json(scene)
 		space.save()
 		return space
@@ -170,5 +209,8 @@ class TemplateDirLoader():
 			tar.add(full_target_path, arcname=target_file)
 		tar.close()
 		return open(tar_path)
+
+def _parse_property_float_array(prop):
+	return [float(p) for p in prop.split(',')]
 
 # Copyright 2010 Trevor F. Smith (http://trevor.smith.name/) Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.

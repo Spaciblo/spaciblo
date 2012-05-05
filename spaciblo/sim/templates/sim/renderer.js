@@ -237,30 +237,6 @@ SpacibloRenderer.Canvas = function(_canvas_id){
 	self.glgeRenderer = null;
 	self.scene = null;
 
-	self.createPointLight = function(x, y, z){
-		var light = new GLGE.Light(GLGE.Assets.createUUID());
-		light.setType(GLGE.L_POINT);
-		light.setDistance(10000);
-		light.specular = true;
-		light.setLocX(x);
-		light.setLocY(y)
-		light.setLocZ(z);
-		return light;
-	},
-
-	self.createDirectionalLight = function(x, y, z, rot){
-		var light = new GLGE.Light(GLGE.Assets.createUUID());
-		light.setType(GLGE.L_DIR);
-		light.setDistance(10000);
-		light.setAttenuation(1, 0.00001, 0.1);
-		light.specular = false;
-		light.setLocX(x);
-		light.setLocY(y)
-		light.setLocZ(z);
-		light.setRot(rot[0], rot[1], rot[2]);
-		return light;
-	},
-
 	self.initialize = function(sceneJson, username) {
 		self.username = username;
 		self.canvas = document.getElementById(self.canvas_id);		
@@ -268,23 +244,43 @@ SpacibloRenderer.Canvas = function(_canvas_id){
 
 		self.glgeRenderer = new GLGE.Renderer(self.canvas);
 
-
 		self.scene = new GLGE.Scene();
+		self.scene.fogType = sceneJson.fogType;
+		self.scene.fogNear = sceneJson.forNear;
+		self.scene.fogFar = sceneJson.fogFar;
+
 		self.scene.obj_name = "I am the scene";
-		self.scene.setAmbientColor("#555");
-		self.scene.setBackgroundColor("#55F");
+		self.scene.backgroundColor = {
+			'r':sceneJson.backgroundColor[0],
+			'g':sceneJson.backgroundColor[1],
+			'b':sceneJson.backgroundColor[2],
+			'a':sceneJson.backgroundColor[3]
+		};
 
-		self.scene.addLight(self.createPointLight(-3, 30, 25));
-		self.scene.addLight(self.createPointLight(10, 30, -25));
-
-		self.scene.addLight(self.createDirectionalLight(0, 0, 0, [-1.3,0,0]));
-		self.scene.addLight(self.createDirectionalLight(0, 0, 0, [1.3,0,0]));
-		//self.scene.addLight(self.createDirectionalLight(0, 0, 0, [-1.57,0,0.5]));
-		//self.scene.addLight(self.createDirectionalLight(0, 0, 0, [-1.57,0,-0.5]));
+		self.scene.ambientColor = {
+			'r':sceneJson.ambientColor[0],
+			'g':sceneJson.ambientColor[1],
+			'b':sceneJson.ambientColor[2]
+		};
 
 		self.scene.camera.setLoc(Spaciblo.defaultPosition[0], Spaciblo.defaultPosition[1], Spaciblo.defaultPosition[2]);
 		self.scene.camera.setQuat(Spaciblo.defaultRotation[0], Spaciblo.defaultRotation[1], Spaciblo.defaultRotation[2], Spaciblo.defaultRotation[3]);
 		for(var i=0; i < sceneJson.children.length; i++){
+			if(typeof sceneJson.children[i].softness != 'undefined'){
+				// Make a light
+				var light = new GLGE.Light(GLGE.Assets.createUUID());
+				for(var key in sceneJson.children[i]){
+					light[key] = sceneJson.children[i][key];
+				}
+				light.color = {
+					'r':sceneJson.children[i].color[0],
+					'g':sceneJson.children[i].color[1],
+					'b':sceneJson.children[i].color[2],
+				};
+				self.scene.addLight(light);
+				continue;
+			}
+
 			var renderable = new SpacibloRenderer.Renderable(self, sceneJson.children[i].uid);
 			renderable.init(sceneJson.children[i]);
 			self.scene.addChild(renderable);
