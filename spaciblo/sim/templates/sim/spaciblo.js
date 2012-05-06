@@ -86,7 +86,9 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 					break;
 				}
 				var renderable = new SpacibloRenderer.Renderable(self, nodeJson.uid);
-				renderable.init(nodeJson);
+				var template = canvas.assetManager.getOrCreateTemplate(nodeJson.group_template);
+				renderable.init(nodeJson, template);
+				template.addListener(renderable);
 				if(nodeJson.username) {
 					renderable.username = nodeJson.username;
 				}
@@ -95,7 +97,11 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 					self.scene.camera.setQuat(renderable.quatX, renderable.quatY, renderable.quatZ, renderable.quatW);
 				}
 				self.scene.addChild(renderable);
-				self.canvas.requestTemplates(renderable);
+				if(template.geometryJson){
+					renderable.setGeometry(template.geometryJson, template);
+				} else if(!template.has_updated) {
+					template.update();
+				}
 				break;
 			case 'NodeRemoved':
 				var node = self.scene.getNode(spaciblo_event.uid);
