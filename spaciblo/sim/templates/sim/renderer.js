@@ -63,7 +63,7 @@ SpacibloRenderer.Renderable.prototype.init = function(nodeJson, template){
 	this.template = template;
 	this.username = nodeJson.username;
 	this.group_template = nodeJson.group_template;
-	
+
 	this.setLoc(nodeJson.locX, nodeJson.locY, nodeJson.locZ);
 	this.setScale(nodeJson.scaleX, nodeJson.scaleY, nodeJson.scaleZ);
 
@@ -125,6 +125,10 @@ SpacibloRenderer.Renderable.prototype.setGeometry = function(nodeJson, template)
 		childRenderable.init(nodeJson.children[i], template);
 		childRenderable.setGeometry(nodeJson.children[i], template);
 		this.addChild(childRenderable);
+	}
+	if(this.username != null){
+		// The body can't be pickable because otherwise our motion picker would pick it when moving backwards.
+		this.setPickable(false);
 	}
 }
 

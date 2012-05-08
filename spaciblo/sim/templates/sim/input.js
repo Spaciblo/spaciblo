@@ -19,8 +19,12 @@ SpacibloInput.InputManager = function(_space_client){
 	
 	self.mouse = new GLGE.MouseInput(space_client.canvas.canvas);
 	self.mouseovercanvas = false;
+	self.key_event = null;
  	self.now = parseInt(new Date().getTime());
 	self.lastTime = parseInt(new Date().getTime());
+
+	self.walkHeight = 1.0;
+	self.maxFallPerMove = 100.0;
 
 	space_client.canvas.canvas.onmouseover=function(e){ self.mouseovercanvas=true; }
 	space_client.canvas.canvas.onmouseout=function(e){ self.mouseovercanvas=false; }
@@ -34,7 +38,16 @@ SpacibloInput.InputManager = function(_space_client){
 	
 	self.relativeMove = function(x, y, z, userNode){
 		var rotatedVec = Spaciblo.Quaternion.multiplyVector3(userNode.getQuat(), [x, y, z]);
-		userNode.setLoc(userNode.locX + rotatedVec[0], userNode.locY + rotatedVec[1], userNode.locZ + rotatedVec[2]);
+		var newLoc = [userNode.locX + rotatedVec[0], userNode.locY + rotatedVec[1], userNode.locZ + rotatedVec[2]];
+		var rayResult = self.space_client.scene.ray(newLoc, [0.0, Math.PI, 0.0]);
+		if(rayResult && rayResult.distance <= self.maxFallPerMove){
+			if(rayResult.distance < self.walkHeight){
+				newLoc[1] += self.walkHeight - rayResult.distance;
+			} else if (rayResult.distance > self.walkHeight){
+				newLoc[1] -= rayResult.distance - self.walkHeight;
+			}
+		}
+		userNode.setLocVec(newLoc);
 		self.space_client.scene.camera.setLoc(userNode.locX, userNode.locY, userNode.locZ);
 	}
 	
@@ -44,7 +57,27 @@ SpacibloInput.InputManager = function(_space_client){
 		self.space_client.scene.camera.setQuatVec(quat);
 	}
 
+	self.add_event_source = function(node){
+		$(node).keydown(self.handle_keydown).keyup(self.handle_keyup);
+	}
+
 	self.handle_keydown = function(event){
+		// This is the browser callback for key events which happen outside of the render loop
+		// The only thing it should do is assign the event to self.key_event
+		self.key_event = event;
+	}
+
+	self.handle_keyup = function(event){
+		// This returns false so that the event doesn't trickle down
+		return false;
+	}
+
+	self.handle_keys = function(){
+		// This is the function which is called during the render loop to handle any key events which have come in since the last render
+		var event = self.key_event;
+		if(event == null) return;
+		self.key_event = null;
+
 		if(event.ctrlKey) return true;
 		if(event.metaKey) return true;
 		var userNode = self.getUserNode();
@@ -102,14 +135,6 @@ SpacibloInput.InputManager = function(_space_client){
 		var event = new Wind.Events.UserMoveRequest(self.space_client.username, [userNode.quatX, userNode.quatY, userNode.quatZ, userNode.quatW], [userNode.locX, userNode.locY, userNode.locZ]);
 		self.space_client.sendEvent(event);
 	}
-	
-	self.handle_keyup = function(event){
-		return false;
-	}
-
-	self.add_event_source = function(node){
-		$(node).keydown(self.handle_keydown).keyup(self.handle_keyup);
-	}
 
 	self.mouse_look = function(){
 		self.now = parseInt(new Date().getTime());
@@ -138,8 +163,4 @@ SpacibloInput.InputManager = function(_space_client){
 		}
 		self.lastTime = self.now;
 	}
-
-
-
-
 }
