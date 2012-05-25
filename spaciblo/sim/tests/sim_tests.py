@@ -1,17 +1,15 @@
-
 from django.conf import settings
 from django.test.client import Client
 from django.contrib.auth.models import User
-from django.contrib.sessions.models import Session
 from django.test import TestCase, TransactionTestCase
 
 from blank_slate.wind.events import EventHandler
 
 from spaciblo.sim.sim_client import SimClient
 from spaciblo.sim.events import TemplateUpdated
+from spaciblo.sim.models import Space, SpaceMember
 from spaciblo.sim.sim_server import SimulationServer
 from spaciblo.sim.management.commands.load_example_spaces import Command
-from spaciblo.sim.models import Space, SpaceMember, SimulatorPoolRegistration
 
 class SimTest(TransactionTestCase): 
 	"""A test suite for the sim server and client.
@@ -22,30 +20,33 @@ class SimTest(TransactionTestCase):
 	def setUp(self):
 		self.command = Command()
 		self.command.handle_noargs()
+		self.space1 = Space.objects.all()[0]
+		self.space1.state = 'admin_only'
+		self.space1.save()
+
 		self.client = Client()
 		self.client2 = Client()
 		self.sim_server = SimulationServer()
 		self.sim_server.start()
+		self.user1 = User.objects.get(username='trevor')
+		self.user2 = User.objects.get(username='sarah')
 
 	def tearDown(self):
 		self.sim_server.stop()
 
 	def test_sim_setup(self):
-		self.client.login(username='trevor', password='1234')
-		self.client2.login(username='sarah', password='1234')
-
-		self.failUnlessEqual(SimulatorPoolRegistration.objects.all().count(), 1)
-		self.failUnlessEqual(SimulatorPoolRegistration.objects.all()[0], self.sim_server.registration)
+		self.client.login(username=self.user1.username, password='1234')
+		self.client2.login(username=self.user2.username, password='1234')
 
 		event_handler = EventHandler()
 
-		sim_client = SimClient(self.client.session.session_key, '127.0.0.1', self.sim_server.wind_server.ws_server.port, '127.0.0.1:8000', event_handler=event_handler.handle_event)
+		sim_client = SimClient(self.user1.session_key, '127.0.0.1', self.sim_server.wind_server.ws_server.port, '127.0.0.1:8000', event_handler=event_handler.handle_event)
 
 		sim_client.authenticate()
 		event = event_handler.events.get(True, 10)
 		self.failUnless(event.authenticated)
-		self.failUnlessEqual('trevor', event.username)
-		self.failUnlessEqual('trevor', sim_client.username)
+		self.failUnlessEqual(self.user1.username, event.username)
+		self.failUnlessEqual(self.user1.username, sim_client.username)
 
 		# TODO test the space info fetching
 		#sim_client.request_pool_info()
@@ -55,7 +56,7 @@ class SimTest(TransactionTestCase):
 		#self.failUnless(event.infos['space_infos'][0].has_key('name'))
 		#self.failUnless(event.infos['space_infos'][0].has_key('url'))
 
-		space = Space.objects.all()[0]
+		space = self.space1
 		sim_client.join_space(space.id)
 		event = event_handler.events.get(True, 10)
 		self.failUnless(event.joined)
@@ -69,22 +70,22 @@ class SimTest(TransactionTestCase):
 		self.failUnless(sim_client.scene)
 		self.failUnless(len(sim_client.scene.children) > 0)
 		event = event_handler.events.get(True, 10)
-		self.failUnlessEqual(event.username, 'trevor')
+		self.failUnlessEqual(event.username, self.user1.username)
 			
 		event_handler2 = EventHandler()
-		sim_client2 = SimClient(self.client2.session.session_key, '127.0.0.1', self.sim_server.wind_server.ws_server.port, '127.0.0.1:8000', event_handler=event_handler2.handle_event)
+		sim_client2 = SimClient(self.user2.session_key, '127.0.0.1', self.sim_server.wind_server.ws_server.port, '127.0.0.1:8000', event_handler=event_handler2.handle_event)
 		sim_client2.authenticate()
 		event = event_handler2.events.get(True, 10)
 		self.failUnless(event.authenticated)
-		
+
+		space.remove_member(self.user2)
 		sim_client2.join_space(space.id)
 		event = event_handler2.events.get(True, 10)
 		self.failUnless(event.joined == False, event.to_json()) # client 2 is not a member yet
-		user2 = User.objects.get(username='sarah')
-		space_member = SpaceMember.objects.create(space=space, member=user2)
+		space_member = space.add_member(self.user2)
 		sim_client2.join_space(space.id)
 		event = event_handler2.events.get(True, 10)
-		self.failUnless(event.joined == False)
+		self.failUnless(event.joined == False, event.to_json())
 
 		space_member.is_admin = True
 		space_member.save()
@@ -100,7 +101,7 @@ class SimTest(TransactionTestCase):
 		event = event_handler.events.get(True, 10)
 		self.failUnless(event.parent_id)
 		event = event_handler.events.get(True, 10)
-		self.failUnlessEqual(event.username, user2.username)
+		self.failUnlessEqual(event.username, self.user2.username)
 		
 		event_handler.events.get(True, 10) # ignore the NodeAdded event
 		sim_client.notify_template_updated(3, '/url')
@@ -118,14 +119,6 @@ class SimTest(TransactionTestCase):
 		event = event_handler2.events.get(True, 10)
 		self.failUnlessEqual(event.template_id, 2)
 		self.failUnlessEqual(event.key, 'moon')
-
-		SimulatorPoolRegistration.objects.broadcast_event(self.client.session.session_key, space.id, TemplateUpdated(23, '/some/url/23', 'dink'))
-		event = event_handler.events.get(True, 10)
-		self.failUnlessEqual(event.template_id, 23)
-		self.failUnlessEqual(event.key, 'dink')
-		event = event_handler2.events.get(True, 10)
-		self.failUnlessEqual(event.template_id, 23)
-		self.failUnlessEqual(event.key, 'dink')
 
 		sim_client.close()
 		sim_client2.close()

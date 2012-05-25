@@ -8,7 +8,6 @@ from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from django.contrib.auth.models import User
 from django.core import mail
-from django.contrib.sessions.models import Session
 
 from spaciblo.sim.loaders.obj import ObjLoader, MtlLibLoader
 from spaciblo.sim.glge import Object, Group, Mesh
@@ -47,7 +46,7 @@ class ObjTest(TransactionTestCase):
 
 	def test_moon(self):
 		parser = ObjLoader()
-		obj = parser.parse(open('example/template/moon/Moon.obj').read())
+		obj = parser.parse(open('example/template/Moon/Moon.obj').read())
 		self.assertEqual(1, len(obj.object_groups), 'Should have one object group')
 		self.assertEqual('Globe', obj.object_groups[0][0], 'The object group should be named "Globe"')
 		self.assertEqual(1, len(obj.smoothing_groups), 'Should have one smoothing group')

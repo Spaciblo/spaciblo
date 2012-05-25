@@ -8,7 +8,6 @@ import ConfigParser
 
 from optparse import make_option
 
-from django.contrib.sessions.models import Session
 from django.core.management.base import BaseCommand, CommandError
 
 from blank_slate.wind.handler import to_json
@@ -50,14 +49,13 @@ class Command(BaseCommand):
 		pool_registration = SimulatorPoolRegistration.objects.all()[0]
 
 		event_handler = EventHandler()
-		session_key = self.get_session_key(admin_user)
 		try:
-			sim_client = SimClient(session_key, pool_registration.ip, pool_registration.port, '%s:80' % pool_registration.ip, event_handler.handle_event)
+			sim_client = SimClient(admin_user.session_key, pool_registration.ip, pool_registration.port, '%s:80' % pool_registration.ip, event_handler.handle_event)
 
 			sim_client.authenticate()
 			auth_event = event_handler.events.get(True, 10)
 			if not auth_event.authenticated: 
-				print 'Could not authenticate using key %s' % session_key
+				print 'Could not authenticate using key %s' % admin_user.session_key
 				return
 
 			sim_client.join_space(space.id)
@@ -82,12 +80,6 @@ class Command(BaseCommand):
 		finally:
 			sim_client.close()
 
-
-	def get_session_key(self, user):
-		for session in Session.objects.all():
-			data = session.get_decoded()
-			if data.has_key('_auth_user_id') and data['_auth_user_id'] == user.id: return session.session_key
-		return None
 
 def generate_lights_csv(scene):
 	lights = []

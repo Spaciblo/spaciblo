@@ -181,8 +181,7 @@ class SimulatorPool:
 
 	def stop_all_spaces(self):
 		self.state = SimulatorPool.terminating
-		for sim in self.simulators:
-			sim.stop()
+		for sim in self.simulators: sim.stop()
 		self.state = SimulatorPool.stopped
 
 	def __unicode__(self):

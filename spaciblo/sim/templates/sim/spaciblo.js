@@ -157,7 +157,6 @@ Spaciblo.SpaceClient = function(space_id, canvas) {
 		self.open_handler();
 	}
 	self.__close = function(){
-		console.log('Space client closed');
 		self.close_handler();
 	}
 	
@@ -200,10 +199,6 @@ Spaciblo.escapeHTML = function(xml){
 
 Spaciblo.unescapeHTML = function(xml){
     return xml.replace(/&apos;/g,"'").replace(/&quot;/g,"\"").replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&amp;/g,"&");
-}
-
-Spaciblo.getSessionCookie = function(){
- return Spaciblo.getCookie('sessionid');
 }
 
 Spaciblo.getCookie = function(name) {

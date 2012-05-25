@@ -36,6 +36,8 @@
 <script>
 GLGE.error = function(message){ console.error(message);};
 
+window.windSessionKey = '{{ request.user.session_key }}';
+
 var space_client = null;
 var sv_canvas = null;
 var input_manager = null;
@@ -89,6 +91,7 @@ function handle_add_user(){
 		setInterval(tick, 25);
 	} else {
 		console.log("Could not initialize the renderer");
+		user_message_handler('System', 'Could not initialize the WebGL renderer.')
 	}
 }
 

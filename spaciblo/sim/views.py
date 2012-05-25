@@ -34,7 +34,7 @@ def simulator_pools(request):
 	regs = []
 	for reg in SimulatorPoolRegistration.objects.all():
 		regs.append(reg)
-		reg.pool_info = reg.fetch_pool_info(request.session.session_key)
+		reg.pool_info = reg.fetch_pool_info(request.user.session_key)
 	return render_to_response('sim/simulator_pools.html', { 'simulator_pool_regs':regs }, context_instance=RequestContext(request))
 
 def spaces(request):

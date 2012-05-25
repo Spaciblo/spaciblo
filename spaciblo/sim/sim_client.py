@@ -5,10 +5,6 @@ import datetime
 import logging
 import simplejson
 
-from django.contrib.sessions.models import Session
-import django.contrib.sessions.backends.db as session_engine
-from django.contrib.auth import BACKEND_SESSION_KEY, SESSION_KEY, authenticate
-
 from blank_slate.wind.client import Client
 from blank_slate.wind.events import Heartbeat, AuthenticationResponse, SubscribeResponse, parse_event_json
 
@@ -27,6 +23,8 @@ class SimClient:
 		self.scene = None
 
 	def handle_event(self, event):
+		if event == None: return
+
 		if isinstance(event, AuthenticationResponse):
 			if event.authenticated:
 				self.username = event.username

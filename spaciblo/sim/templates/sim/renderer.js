@@ -146,6 +146,8 @@ SpacibloRenderer.parseArray = function(data){
 //
 //
 
+window.globalNoWebGLError = 'Do not show'; //Prevent GLGE from showing an error window
+
 SpacibloRenderer.Canvas = function(_canvas_id){
 	var self = this;
 	self.canvas_id = _canvas_id;
@@ -159,9 +161,14 @@ SpacibloRenderer.Canvas = function(_canvas_id){
 		self.canvas = document.getElementById(self.canvas_id);		
 		if(self.canvas == null) return false;
 
-		self.glgeRenderer = new GLGE.Renderer(self.canvas);
+		try {
+			self.glgeRenderer = new GLGE.Renderer(self.canvas);
+			self.scene = new GLGE.Scene();
+		} catch(err) {
+			console.log("Error:", err, this);
+			return false;
+		}
 
-		self.scene = new GLGE.Scene();
 		self.scene.fogType = sceneJson.fogType;
 		self.scene.fogNear = sceneJson.forNear;
 		self.scene.fogFar = sceneJson.fogFar;

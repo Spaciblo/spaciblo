@@ -6,7 +6,6 @@ import threading
 import simplejson
 
 from django.conf import settings
-from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, load_backend
 from django.contrib.auth.models import AnonymousUser
 
 from blank_slate.wind.events import parse_event_json

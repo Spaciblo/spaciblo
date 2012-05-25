@@ -8,7 +8,6 @@ from django.test.client import Client
 from django.contrib.auth.models import User
 from django.core import mail
 from django.test.client import Client
-from django.contrib.sessions.models import Session
 
 from blank_slate.wind.handler import to_json, from_json
 

@@ -11,12 +11,10 @@ from django.core.files import File
 from django.contrib.auth.models import User
 from django.utils.importlib import import_module
 from django.template.defaultfilters import slugify
-from django.contrib.sessions.models import Session
 from django.contrib.auth import login, authenticate
 
 from blank_slate.wind.handler import to_json
 
-from spaciblo.sim.events import TemplateUpdated
 from spaciblo.sim.models import Space, Template, Asset, TemplateAsset
 from spaciblo.sim.glge import Object, Scene, Group, GroupTemplate, Light, L_DIR, L_POINT, L_SPOT
 

@@ -8,8 +8,10 @@ from django.db import models
 from django.conf import settings
 from django.core.files import File
 from django.core.exceptions import *
+from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
+from django.db.models.signals import post_save
 from django.core.files.storage import default_storage
 
 from piston.handler import BaseHandler
@@ -39,7 +41,6 @@ class SpaceManager(models.Manager):
 		try:
 			space_member = SpaceMember.objects.get(space=space, member=user)
 		except:
-			traceback.print_exc()
 			space_member = None
 		if space.state == 'closed': return (False, space_member)
 		if space.state == 'admin_only' and (space_member == None or not space_member.is_admin): return (False, space_member)
@@ -67,6 +68,11 @@ class Space(HydrateModel):
 		membership.is_admin = is_admin
 		membership.is_editor = is_editor
 		membership.save()
+		return membership
+
+	def remove_member(self, user):
+		if SpaceMember.objects.filter(member=user, space=self).count() == 0: return
+		SpaceMember.objects.get(member=user, space=self).delete()
 
 	@models.permalink
 	def get_absolute_url(self): 
@@ -86,6 +92,9 @@ class SpaceMember(HydrateModel):
 	member = models.ForeignKey(User, blank=False, null=False)
 	is_admin = models.BooleanField(blank=False, default=False)
 	is_editor = models.BooleanField(blank=False, default=False)
+
+	class Meta:
+		unique_together = ('space', 'member')
 
 class SpaceMemberHandler:
 	model = SpaceMember
