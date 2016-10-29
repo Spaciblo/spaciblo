@@ -1,6 +1,6 @@
 # Spaciblō: A Toolkit for Social Spaces on the Web
 
-The main site for this project is http://spaciblo.org/
+This code base is, as you may have gathered, no longer under active development. See [the wiki](https://github.com/Spaciblo/spaciblo/wiki) or [@spaciblo](https://twitter.com/spaciblo) for news.
 
 This project is licensed under the Apache 2 license.  See LICENSE.txt for more information.
 
