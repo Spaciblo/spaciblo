@@ -1,4 +1,4 @@
-# Spaciblō:
+# Spaciblō
 
 The Spaciblō project builds hosting tools for browser based, social, 3D spaces. 
 
