@@ -1,6 +1,6 @@
 # Spaciblō
 
-The Spaciblō project builds hosting tools for browser based, social, 3D spaces. 
+The [Spaciblō project](https://spaciblo.org/) builds hosting tools for browser based, social, 3D spaces. 
 
 This repository houses the project-wide wiki. 
 
